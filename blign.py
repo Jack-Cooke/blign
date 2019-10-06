@@ -94,6 +94,20 @@ class Blign(bpy.types.Panel):
 class BlignSettings(bpy.types.PropertyGroup):
     # all update lines have been removed and probably have some real function
 
+    Align: bpy.props.BoolProperty(
+        name="Align",
+        description="Aligns selected objects",
+        options={'HIDDEN'},
+        default=False,
+    )
+
+    Distribute: bpy.props.BoolProperty(
+        name="Distribute",
+        description="Distributes objects",
+        options={'HIDDEN'},
+        default=False,
+    )
+
     Spacing: bpy.props.IntProperty(
         name="Spacing",
         description="Set distribution value between objects",
@@ -200,6 +214,29 @@ class Blign_Two_Objects(bpy.types.Panel):
         row.prop(object.blign_props, 'ob2')
 
 
+class Align(bpy.types.Panel):
+    bl_label = "Align"
+    bl_parent_id = "Blign"
+    bl_category = "Geometry"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(self, context):
+        if context.object and context.object.blign:
+            return True
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        settings = context.scene.object_settings
+
+        row = layout.row()
+        row.prop(settings, "Align")
+
+
 class Distribute(bpy.types.Panel):
     bl_label = "Distribute"
     bl_parent_id = "Blign"
@@ -218,18 +255,23 @@ class Distribute(bpy.types.Panel):
         layout = self.layout
         layout.use_property_split = True
         object = context.object
+        settings = context.scene.object_settings
 
         row = layout.row()
         row.prop(object.blign_props, 'Spacing')
 
+        row = layout.row()
+        row.prop(settings, "Distribute")
+
 
 classes = (
+    Add_Object,
+    Remove_Object,
     Blign,
     BlignSettings,
     Blign_One_Object,
     Blign_Two_Objects,
-    Add_Object,
-    Remove_Object,
+    Align,
     Distribute,
 )
 
@@ -237,9 +279,6 @@ classes = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-
-# creates a new subset of bpy.context.scene called "object_settings"
-# needs to point to the class where the info is given to the buttons, not to where "object settings" is actually used in Blign_Object_Settings
 
     bpy.types.Scene.object_settings = bpy.props.PointerProperty(
         type=BlignSettings)
