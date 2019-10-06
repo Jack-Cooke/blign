@@ -149,6 +149,7 @@ class Blign_One_Object(bpy.types.Panel):
     bl_region_type = "UI"
     bl_options = {'DEFAULT_CLOSED'}
 
+    # This function makes drop down menus available or unavailable depending on whether or not the object is added or not
     @classmethod
     def poll(self, context):
         if context.object and context.object.blign:
