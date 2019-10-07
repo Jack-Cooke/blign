@@ -111,6 +111,8 @@ class Blign_Align_Button2(bpy.types.Operator):
 
     # return {'FINISHED'}
 
+# edge cases still need to be addressed, i.e. what if only one object is selected
+
 
 class Blign_Distribute_Button(bpy.types.Operator):
     bl_idname = "rigidbody.blign_distribute_button"
@@ -125,6 +127,50 @@ class Blign_Distribute_Button(bpy.types.Operator):
     # Code that gives button function goes here
     def execute(self, context):
         #spacing = bpy.context.object.blign_props.Spacing
+        axis = bpy.context.scene.object_settings.Axis
+        oblist = bpy.context.selected_objects
+        if axis == 'x-axis':
+            xlist = []
+            i = 0
+            j = 0
+            for object in oblist:
+                loc = object.location.x
+                xlist.append(loc)
+                i += 1
+            xlist.sort()
+            distance = xlist[-1] - xlist[0]
+            default_spacing = distance / (i - 1)
+            for object in oblist:
+                object.location.x = xlist[0] + default_spacing * j
+                j += 1
+        elif axis == 'y-axis':
+            ylist = []
+            i = 0
+            j = 0
+            for object in oblist:
+                loc = object.location.y
+                ylist.append(loc)
+                i += 1
+            ylist.sort()
+            distance = ylist[-1] - ylist[0]
+            default_spacing = distance / (i - 1)
+            for object in oblist:
+                object.location.y = ylist[0] + default_spacing * j
+                j += 1
+        elif axis == 'z-axis':
+            zlist = []
+            i = 0
+            j = 0
+            for object in oblist:
+                loc = object.location.z
+                zlist.append(loc)
+                i += 1
+            zlist.sort()
+            distance = zlist[-1] - zlist[0]
+            default_spacing = distance / (i - 1)
+            for object in oblist:
+                object.location.z = zlist[0] + default_spacing * j
+                j += 1
 
         return {'FINISHED'}
 
