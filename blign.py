@@ -4,6 +4,7 @@ import mathutils
 from gpu_extras.batch import batch_for_shader
 import gpu
 import bpy
+import numpy as np
 bl_info = {
     "name": "Blign",
     "author": "Team Wilmer",
@@ -62,6 +63,72 @@ class Remove_Object(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class Blign_Align_Button1(bpy.types.Operator):
+    bl_idname = "rigidbody.blign_align_button1"
+    bl_label = "Align"
+    bl_description = "Align selected objects"
+
+    # @classmethod
+    # def poll(cls, context):
+    #    if context.object.blign:
+    #        return context.object.type == 'MESH'
+
+    # Code that gives button function goes here
+    def execute(self, context):
+        axis = bpy.context.scene.object_settings.Axis
+        if axis == 'x-axis':
+            for object in context.selected_objects:
+                object.location.y = 0
+                object.location.z = 0
+
+        elif axis == 'y-axis':
+            for object in context.selected_objects:
+                object.location.x = 0
+                object.location.z = 0
+
+        elif axis == 'z-axis':
+            for object in context.selected_objects:
+                object.location.x = 0
+                object.location.y = 0
+
+        return {'FINISHED'}
+
+
+class Blign_Align_Button2(bpy.types.Operator):
+    bl_idname = "rigidbody.blign_align_button2"
+    bl_label = "Align"
+    bl_description = "Align selected objects"
+
+    # @classmethod
+    # def poll(cls, context):
+    #    if context.object.blign:
+    #        return context.object.type == 'MESH'
+
+    # Code that gives button function goes here
+    # def execute(self, context):
+    # Apply transforms to all selected projectile objects
+    # apply_transforms(context)
+
+    # return {'FINISHED'}
+
+
+class Blign_Distribute_Button(bpy.types.Operator):
+    bl_idname = "rigidbody.blign_distribute_button"
+    bl_label = "Distribute"
+    bl_description = "Distribute objects"
+
+    # @classmethod
+    # def poll(cls, context):
+    #    if context.object.blign:
+    #        return context.object.type == 'MESH'
+
+    # Code that gives button function goes here
+    def execute(self, context):
+        #spacing = bpy.context.object.blign_props.Spacing
+
+        return {'FINISHED'}
+
+
 class Blign(bpy.types.Panel):
     bl_label = "Blign"
     bl_category = "Geometry"
@@ -94,20 +161,6 @@ class Blign(bpy.types.Panel):
 class BlignSettings(bpy.types.PropertyGroup):
     # all update lines have been removed and probably have some real function
 
-    Align: bpy.props.BoolProperty(
-        name="Align",
-        description="Aligns selected objects",
-        options={'HIDDEN'},
-        default=False,
-    )
-
-    Distribute: bpy.props.BoolProperty(
-        name="Distribute",
-        description="Distributes objects",
-        options={'HIDDEN'},
-        default=False,
-    )
-
     Spacing: bpy.props.IntProperty(
         name="Spacing",
         description="Set distribution value between objects",
@@ -131,18 +184,12 @@ class BlignSettings(bpy.types.PropertyGroup):
         options={'HIDDEN'},
     )
 
-    Positive: bpy.props.BoolProperty(
-        name="Positive",
-        description="Align objects in the positive x y or z direction",
+    Direction: bpy.props.EnumProperty(
+        name="Direction",
+        items=[("Positive", "+", "Align objects in the positive direction of axis"),
+               ("Negative", "-", "Align objects in the negative direction of axis")],
+        default='Positive',
         options={'HIDDEN'},
-        default=True,
-    )
-
-    Negative: bpy.props.BoolProperty(
-        name="Negative",
-        description="Align objects in the negative x y or z direction",
-        options={'HIDDEN'},
-        default=False,
     )
 
     Axis: bpy.props.EnumProperty(
@@ -155,8 +202,8 @@ class BlignSettings(bpy.types.PropertyGroup):
     )
 
 
-class Blign_One_Object(bpy.types.Panel):
-    bl_label = "One Object"
+class Blign_Align(bpy.types.Panel):
+    bl_label = "Align"
     bl_parent_id = "Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
@@ -164,11 +211,44 @@ class Blign_One_Object(bpy.types.Panel):
     bl_options = {'DEFAULT_CLOSED'}
 
     # This function makes drop down menus available or unavailable depending on whether or not the object is added or not
-    @classmethod
-    def poll(self, context):
-        if context.object and context.object.blign:
-            return True
-        return False
+    # @classmethod
+    # def poll(self, context):
+    #    if context.object and context.object.blign:
+    #        return True
+    #    return False
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+# settings is needed as argument in row
+        settings = context.scene.object_settings
+
+# layout.row() creates a button on a new row
+
+        row = layout.row()
+        row.prop(settings, "Axis", expand=True)
+
+        #row = layout.row()
+        #row.prop(settings, "Direction", expand=True)
+
+        row = layout.row()
+        row.operator('rigidbody.blign_align_button1')
+
+
+class Blign_One_Object(bpy.types.Panel):
+    bl_label = "Align to One Object"
+    bl_parent_id = "Blign"
+    bl_category = "Geometry"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    # This function makes drop down menus available or unavailable depending on whether or not the object is added or not
+    # @classmethod
+    # def poll(self, context):
+    #    if context.object and context.object.blign:
+    #        return True
+    #    return False
 
     def draw(self, context):
         layout = self.layout
@@ -182,25 +262,25 @@ class Blign_One_Object(bpy.types.Panel):
         row.prop(settings, "Axis", expand=True)
 
         row = layout.row()
-        row.prop(settings, "Positive")
+        row.prop(settings, "Direction", expand=True)
 
         row = layout.row()
-        row.prop(settings, "Negative")
+        row.operator('rigidbody.blign_align_button2')
 
 
 class Blign_Two_Objects(bpy.types.Panel):
-    bl_label = "Two Objects"
+    bl_label = "Align to Two Objects"
     bl_parent_id = "Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_options = {'DEFAULT_CLOSED'}
 
-    @classmethod
-    def poll(self, context):
-        if context.object and context.object.blign:
-            return True
-        return False
+    # @classmethod
+    # def poll(self, context):
+    #    if context.object and context.object.blign:
+    #        return True
+    #    return False
 
     def draw(self, context):
         layout = self.layout
@@ -213,31 +293,11 @@ class Blign_Two_Objects(bpy.types.Panel):
         row = layout.row()
         row.prop(object.blign_props, 'ob2')
 
-
-class Align(bpy.types.Panel):
-    bl_label = "Align"
-    bl_parent_id = "Blign"
-    bl_category = "Geometry"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(self, context):
-        if context.object and context.object.blign:
-            return True
-        return False
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        settings = context.scene.object_settings
-
         row = layout.row()
-        row.prop(settings, "Align")
+        row.operator('rigidbody.blign_align_button2')
 
 
-class Distribute(bpy.types.Panel):
+class Blign_Distribute(bpy.types.Panel):
     bl_label = "Distribute"
     bl_parent_id = "Blign"
     bl_category = "Geometry"
@@ -245,11 +305,11 @@ class Distribute(bpy.types.Panel):
     bl_region_type = "UI"
     bl_options = {'DEFAULT_CLOSED'}
 
-    @classmethod
-    def poll(self, context):
-        if context.object and context.object.blign:
-            return True
-        return False
+    # @classmethod
+    # def poll(self, context):
+    #    if context.object and context.object.blign:
+    #        return True
+    #    return False
 
     def draw(self, context):
         layout = self.layout
@@ -258,21 +318,27 @@ class Distribute(bpy.types.Panel):
         settings = context.scene.object_settings
 
         row = layout.row()
+        row.prop(settings, "Axis", expand=True)
+
+        row = layout.row()
         row.prop(object.blign_props, 'Spacing')
 
         row = layout.row()
-        row.prop(settings, "Distribute")
+        row.operator('rigidbody.blign_distribute_button')
 
 
 classes = (
     Add_Object,
     Remove_Object,
+    Blign_Align_Button1,
+    Blign_Align_Button2,
+    Blign_Distribute_Button,
     Blign,
     BlignSettings,
+    Blign_Align,
     Blign_One_Object,
     Blign_Two_Objects,
-    Align,
-    Distribute,
+    Blign_Distribute,
 )
 
 
