@@ -111,9 +111,8 @@ class Blign_Align_Button2(bpy.types.Operator):
 
     # return {'FINISHED'}
 
+
 # edge cases still need to be addressed, i.e. what if only one object is selected
-
-
 class Blign_Distribute_Button(bpy.types.Operator):
     bl_idname = "rigidbody.blign_distribute_button"
     bl_label = "Distribute"
@@ -129,10 +128,10 @@ class Blign_Distribute_Button(bpy.types.Operator):
         #spacing = bpy.context.object.blign_props.Spacing
         axis = bpy.context.scene.object_settings.Axis
         oblist = bpy.context.selected_objects
+        i = 0
+        j = 0
         if axis == 'x-axis':
             xlist = []
-            i = 0
-            j = 0
             for object in oblist:
                 loc = object.location.x
                 xlist.append(loc)
@@ -145,8 +144,6 @@ class Blign_Distribute_Button(bpy.types.Operator):
                 j += 1
         elif axis == 'y-axis':
             ylist = []
-            i = 0
-            j = 0
             for object in oblist:
                 loc = object.location.y
                 ylist.append(loc)
@@ -159,8 +156,6 @@ class Blign_Distribute_Button(bpy.types.Operator):
                 j += 1
         elif axis == 'z-axis':
             zlist = []
-            i = 0
-            j = 0
             for object in oblist:
                 loc = object.location.z
                 zlist.append(loc)
@@ -184,7 +179,6 @@ class Blign(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        # settings = context.scene.object_settings
 
         ob = context.object
         if (ob and ob.blign):
@@ -213,7 +207,7 @@ class BlignSettings(bpy.types.PropertyGroup):
         default=1,
         options={'HIDDEN'},
     )
-# these 2 were called s in projectile
+
     ob1: bpy.props.FloatVectorProperty(
         name="Loc 1",
         description="Initial position for object 1",
@@ -266,16 +260,10 @@ class Blign_Align(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-# settings is needed as argument in row
         settings = context.scene.object_settings
-
-# layout.row() creates a button on a new row
 
         row = layout.row()
         row.prop(settings, "Axis", expand=True)
-
-        #row = layout.row()
-        #row.prop(settings, "Direction", expand=True)
 
         row = layout.row()
         row.operator('rigidbody.blign_align_button1')
@@ -289,7 +277,6 @@ class Blign_One_Object(bpy.types.Panel):
     bl_region_type = "UI"
     bl_options = {'DEFAULT_CLOSED'}
 
-    # This function makes drop down menus available or unavailable depending on whether or not the object is added or not
     # @classmethod
     # def poll(self, context):
     #    if context.object and context.object.blign:
@@ -299,10 +286,7 @@ class Blign_One_Object(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-# settings is needed as argument in row
         settings = context.scene.object_settings
-
-# layout.row() creates a button on a new row
 
         row = layout.row()
         row.prop(settings, "Axis", expand=True)
