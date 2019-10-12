@@ -1,10 +1,6 @@
-from bpy.app.handlers import persistent
 import math
 import mathutils
-from gpu_extras.batch import batch_for_shader
-import gpu
 import bpy
-import numpy as np
 bl_info = {
     "name": "Blign",
     "author": "Team Wilmer",
@@ -68,6 +64,7 @@ class Remove_Object(bpy.types.Operator):
 
                 context.object.blign = False
         return {'FINISHED'}
+
 
 # Class that defines Align button within the Align tab
 
@@ -137,10 +134,10 @@ class Blign_Distribute_Button(bpy.types.Operator):
 
     def execute(self, context):
         indicate = bpy.context.scene.object_settings.indicate_spacing
+        axis = bpy.context.scene.object_settings.Axis
+        oblist = bpy.context.selected_objects
 
         if indicate == False:  # if indicate_spacing button is unchecked, by default objects get distributed evenly between the first and last objects selected
-            axis = bpy.context.scene.object_settings.Axis
-            oblist = bpy.context.selected_objects
             i = 0
             j = 0
             if axis == 'x-axis':
@@ -181,8 +178,6 @@ class Blign_Distribute_Button(bpy.types.Operator):
                     j += 1
         else:  # if indicate_spacing is checked, spacint defines how far apart objects are distributed
             spacing = bpy.context.object.blign_props.Spacing
-            axis = bpy.context.scene.object_settings.Axis
-            oblist = bpy.context.selected_objects
             i = 0
             j = 0
             if axis == 'x-axis':
@@ -239,7 +234,6 @@ class Blign(bpy.types.Panel):
                     'rigidbody.blign_remove_object', text="Remove Objects")
             else:
                 row.operator('rigidbody.blign_remove_object')
-
         else:
             row = layout.row()
             if len(context.selected_objects) > 1:
