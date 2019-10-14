@@ -1,6 +1,7 @@
 import math
 import mathutils
 import bpy
+import numpy as np
 bl_info = {
     "name": "Blign",
     "author": "Team Wilmer",
@@ -137,80 +138,55 @@ class Blign_Distribute_Button(bpy.types.Operator):
         axis = bpy.context.scene.object_settings.Axis
         oblist = bpy.context.selected_objects
 
-        if indicate == False:  # if indicate_spacing button is unchecked, by default objects get distributed evenly between the first and last objects selected
-            i = 0
-            j = 0
+        if not indicate:  # if indicate_spacing button is unchecked, by default objects get distributed evenly between the first and last objects selected
+            pos_list = []
             if axis == 'x-axis':
-                xlist = []
-                for object in oblist:
-                    loc = object.location.x
-                    xlist.append(loc)
-                    i += 1
-                xlist.sort()
-                distance = xlist[-1] - xlist[0]
-                default_spacing = distance / (i - 1)
-                for object in oblist:
-                    object.location.x = xlist[0] + default_spacing * j
-                    j += 1
+                pos_list = [o.location.x for o in oblist]
+                obj_idx = np.argsort(pos_list)
+                distance = max(pos_list) - min(pos_list)
+                default_spacing = distance / (len(pos_list) - 1)
+                for i, idx in enumerate(obj_idx):
+                    oblist[idx].location.x = oblist[obj_idx[0]].location.x + \
+                        default_spacing * i
             elif axis == 'y-axis':
-                ylist = []
-                for object in oblist:
-                    loc = object.location.y
-                    ylist.append(loc)
-                    i += 1
-                ylist.sort()
-                distance = ylist[-1] - ylist[0]
-                default_spacing = distance / (i - 1)
-                for object in oblist:
-                    object.location.y = ylist[0] + default_spacing * j
-                    j += 1
+                pos_list = [o.location.y for o in oblist]
+                obj_idx = np.argsort(pos_list)
+                distance = max(pos_list) - min(pos_list)
+                default_spacing = distance / (len(pos_list) - 1)
+                for i, idx in enumerate(obj_idx):
+                    oblist[idx].location.y = oblist[obj_idx[0]].location.y + \
+                        default_spacing * i
             elif axis == 'z-axis':
-                zlist = []
-                for object in oblist:
-                    loc = object.location.z
-                    zlist.append(loc)
-                    i += 1
-                zlist.sort()
-                distance = zlist[-1] - zlist[0]
-                default_spacing = distance / (i - 1)
-                for object in oblist:
-                    object.location.z = zlist[0] + default_spacing * j
-                    j += 1
+                pos_list = [o.location.z for o in oblist]
+                obj_idx = np.argsort(pos_list)
+                distance = max(pos_list) - min(pos_list)
+                default_spacing = distance / (len(pos_list) - 1)
+                for i, idx in enumerate(obj_idx):
+                    oblist[idx].location.z = oblist[obj_idx[0]].location.z + \
+                        default_spacing * i
         else:  # if indicate_spacing is checked, spacint defines how far apart objects are distributed
-            spacing = bpy.context.object.blign_props.Spacing
-            i = 0
-            j = 0
+            spacing = bpy.context.scene.object_settings.Spacing
             if axis == 'x-axis':
-                xlist = []
-                for object in oblist:
-                    loc = object.location.x
-                    xlist.append(loc)
-                    i += 1
-                xlist.sort()
-                for object in oblist:
-                    object.location.x = xlist[0] + spacing * j
-                    j += 1
+                pos_list = [o.location.x for o in oblist]
+                obj_idx = np.argsort(pos_list)
+                distance = max(pos_list) - min(pos_list)
+                for i, idx in enumerate(obj_idx):
+                    oblist[idx].location.x = oblist[obj_idx[0]
+                                                    ].location.x + spacing * i
             elif axis == 'y-axis':
-                ylist = []
-                for object in oblist:
-                    loc = object.location.y
-                    ylist.append(loc)
-                    i += 1
-                ylist.sort()
-                for object in oblist:
-                    object.location.y = ylist[0] + spacing * j
-                    j += 1
+                pos_list = [o.location.y for o in oblist]
+                obj_idx = np.argsort(pos_list)
+                distance = max(pos_list) - min(pos_list)
+                for i, idx in enumerate(obj_idx):
+                    oblist[idx].location.y = oblist[obj_idx[0]
+                                                    ].location.y + spacing * i
             elif axis == 'z-axis':
-                zlist = []
-                for object in oblist:
-                    loc = object.location.z
-                    zlist.append(loc)
-                    i += 1
-                zlist.sort()
-                for object in oblist:
-                    object.location.z = zlist[0] + spacing * j
-                    j += 1
-
+                pos_list = [o.location.z for o in oblist]
+                obj_idx = np.argsort(pos_list)
+                distance = max(pos_list) - min(pos_list)
+                for i, idx in enumerate(obj_idx):
+                    oblist[idx].location.z = oblist[obj_idx[0]
+                                                    ].location.z + spacing * i
         return {'FINISHED'}
 
 
@@ -229,7 +205,7 @@ class Blign(bpy.types.Panel):
         ob = context.object
         if (ob and ob.blign):
             row = layout.row()
-            if(len([object for object in context.selected_objects if object.blign])) > 1:
+            if(len([object for object in context.selected_objects if object.blign])) > 1:  # changes here
                 row.operator(
                     'rigidbody.blign_remove_object', text="Remove Objects")
             else:
@@ -376,13 +352,18 @@ class Blign_Two_Objects(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        object = context.object
 
-        row = layout.row()
-        row.prop(object.blign_props, 'ob1')
+        # If two objects are selected show align button else don't show
 
-        row = layout.row()
-        row.prop(object.blign_props, 'ob2')
+        if len([o for o in context.selected_objects if o.blign]) == 2:
+            # align
+            pass
+
+        # row = layout.row()
+        # row.prop(object.blign_props, 'ob1')
+
+        # row = layout.row()
+        # row.prop(object.blign_props, 'ob2')
 
         row = layout.row()
         row.operator('rigidbody.blign_align_button2')
@@ -407,7 +388,6 @@ class Blign_Distribute(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        object = context.object
         settings = context.scene.object_settings
 
         row = layout.row()
@@ -417,7 +397,7 @@ class Blign_Distribute(bpy.types.Panel):
         row.prop(settings, "indicate_spacing")
 
         row = layout.row()
-        row.prop(object.blign_props, 'Spacing')
+        row.prop(settings, 'Spacing')
 
         row = layout.row()
         row.operator('rigidbody.blign_distribute_button')
@@ -436,6 +416,8 @@ classes = (
     Blign_One_Object,
     Blign_Two_Objects,
     Blign_Distribute,
+
+
 )
 
 # Registers classes and defines new things
@@ -449,10 +431,11 @@ def register():
     bpy.types.Scene.object_settings = bpy.props.PointerProperty(
         type=BlignSettings)
     # Creates new subset of bpy.types.object called blign
-    bpy.types.Object.blign = bpy.props.BoolProperty(name="Blign")
+    bpy.types.Object.blign = bpy.props.BoolProperty(
+        name="Blign")  # change bool to something
     # Creates new subset of bpy.types.object called blign_props
-    bpy.types.Object.blign_props = bpy.props.PointerProperty(
-        type=BlignSettings)
+   # bpy.types.Object.blign_props = bpy.props.PointerProperty(
+   #     type = BlignSettings)
 
 # Unregisters classes
 
