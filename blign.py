@@ -14,18 +14,15 @@ bl_info = {
     "category": "Geometry"
 }
 
-# Class that defines the Add Object button
-
 
 class Add_Object(bpy.types.Operator):
+    """Class that defines the Add Object button."""
     bl_idname = "rigidbody.blign_add_object"
     bl_label = "Add Object"
     bl_description = "Set selected object as a blign object"
 
-
-# Sets the object as object.blign
-
     def execute(self, context):
+        """Sets the object as object.blign."""
         for object in context.selected_objects:
             if not object.blign:
                 context.view_layer.objects.active = object
@@ -34,10 +31,9 @@ class Add_Object(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# Class that defines the Remove Object button
-
 
 class Remove_Object(bpy.types.Operator):
+    """Class that defines the Remove Object button."""
     bl_idname = "rigidbody.blign_remove_object"
     bl_label = "Remove Object"
     bl_description = "Remove object from as a blign object"
@@ -47,8 +43,8 @@ class Remove_Object(bpy.types.Operator):
         if context.object:
             return context.object.blign
 
-    # Unsets object as object.blign
     def execute(self, context):
+        """Unsets object as object.blign."""
         for object in context.selected_objects:
             if object.blign:
                 context.view_layer.objects.active = object
@@ -58,17 +54,14 @@ class Remove_Object(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# Class that defines Align button within the Align tab
-
-
 class Blign_Align_Button1(bpy.types.Operator):
+    """Class that defines Align button within the Align tab."""
     bl_idname = "rigidbody.blign_align_button1"
     bl_label = "Align"
     bl_description = "Align selected objects"
 
-    # Moves objects to the chosen axis to align to
-
     def execute(self, context):
+        """Moves objects to the chosen axis."""
         axis = bpy.context.scene.object_settings.Axis
         oblist = bpy.context.selected_objects
         if axis == 'x-axis':
@@ -89,13 +82,18 @@ class Blign_Align_Button1(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# Will define the Align button in the Align to One Object tab
 class Blign_Align_Button2(bpy.types.Operator):
+    """Defines the Align button in the Align to One (and Two) Object tab."""
     bl_idname = "rigidbody.blign_align_button2"
     bl_label = "Align"
     bl_description = "Align selected objects"
 
     def execute(self, context):
+        """Iterates through all objects, counts number of blign objects.
+
+        If number of blign objects = 1, aligns selected objects to that one object.
+        If number of blign objects = 2, will align all objects along the line between the 2 blign objects.
+        """
         axis = bpy.context.scene.object_settings.Axis
         oblist = bpy.context.selected_objects
         i = 0
@@ -147,23 +145,30 @@ class Blign_Align_Button2(bpy.types.Operator):
         #        object.location.x = blobs[1][0] + v(0) * newt
         #        object.location.y = blobs[1][1] + v(1) * newt
         #        object.location.z = blobs[1][2] + v(2) * newt
+        else:
+            pass
 
         return {'FINISHED'}
 
 
 # edge cases still need to be addressed, i.e. what if only one object is selected
-# Defines the Distribute button
 class Blign_Distribute_Button(bpy.types.Operator):
+    """Defines the Distribute button."""
     bl_idname = "rigidbody.blign_distribute_button"
     bl_label = "Distribute"
     bl_description = "Distribute objects"
 
     def execute(self, context):
+        """Distributes objects between first and last object.
+
+        Indicate = the indicate spacing button. If unchecked, evenly distributes shapes. 
+        If checked, distributes objects 'spacing' units apart.
+        """
         indicate = bpy.context.scene.object_settings.indicate_spacing
         axis = bpy.context.scene.object_settings.Axis
         oblist = bpy.context.selected_objects
 
-        if not indicate:  # if indicate_spacing button is unchecked, by default objects get distributed evenly between the first and last objects selected
+        if not indicate:
             pos_list = []
             if axis == 'x-axis':
                 pos_list = [o.location.x for o in oblist]
@@ -189,7 +194,7 @@ class Blign_Distribute_Button(bpy.types.Operator):
                 for i, idx in enumerate(obj_idx):
                     oblist[idx].location.z = oblist[obj_idx[0]].location.z + \
                         default_spacing * i
-        else:  # if indicate_spacing is checked, spacint defines how far apart objects are distributed
+        else:
             spacing = bpy.context.scene.object_settings.Spacing
             if axis == 'x-axis':
                 pos_list = [o.location.x for o in oblist]
@@ -212,21 +217,26 @@ class Blign_Distribute_Button(bpy.types.Operator):
                 for i, idx in enumerate(obj_idx):
                     oblist[idx].location.z = oblist[obj_idx[0]
                                                     ].location.z + spacing * i
+
         return {'FINISHED'}
 
 
-# Parent tab
 class Blign(bpy.types.Panel):
+    """Parent tab, all other tabs are within this one."""
     bl_label = "Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
 
-    # Outlines the Add and Remove buttons in the Blign tab
     def draw(self, context):
+        """Outlines the Add and Remove buttons in the Blign tab.
+
+        Finds the number of objects added.
+        If one or more objects are added, shows remove button. 
+        Does not allow user to add more than 2 objects as blign objects.
+        """
         layout = self.layout
         layout.use_property_split = True
-        # ob = context.object
 
         i = 0
         for object in list(bpy.data.objects):
@@ -241,12 +251,10 @@ class Blign(bpy.types.Panel):
                 row = layout.row()
                 row.operator('rigidbody.blign_add_object')
 
+
 # Class that defines all simpler buttons
-
-
 class BlignSettings(bpy.types.PropertyGroup):
-    # all update lines have been removed and probably have some real function
-
+    """All buttons used in the add-on are defined in this class."""
     Spacing: bpy.props.IntProperty(
         name="Spacing",
         description="Set distribution value between objects",
@@ -261,30 +269,6 @@ class BlignSettings(bpy.types.PropertyGroup):
         default=False
     )
 
-    ob1: bpy.props.FloatVectorProperty(
-        name="Loc 1",
-        description="Initial position for object 1",
-        subtype='TRANSLATION',
-        precision=4,
-        options={'HIDDEN'},
-    )
-
-    ob2: bpy.props.FloatVectorProperty(
-        name="Loc 2",
-        description="Initial position for object 2",
-        subtype='TRANSLATION',
-        precision=4,
-        options={'HIDDEN'},
-    )
-
-    # Direction: bpy.props.EnumProperty(
-    #    name="Direction",
-    #    items=[("Positive", "+", "Align objects in the positive direction of axis"),
-    #           ("Negative", "-", "Align objects in the negative direction of axis")],
-    #    default='Positive',
-    #    options={'HIDDEN'},
-    # )
-
     Axis: bpy.props.EnumProperty(
         name="Axis",
         items=[("x-axis", "x", "Align objects in the x direction"),
@@ -294,10 +278,9 @@ class BlignSettings(bpy.types.PropertyGroup):
         options={'HIDDEN'},
     )
 
-# Class that outlines the Align tab
-
 
 class Blign_Align(bpy.types.Panel):
+    """Class that outlines the Align tab."""
     bl_label = "Align"
     bl_parent_id = "Blign"
     bl_category = "Geometry"
@@ -312,8 +295,11 @@ class Blign_Align(bpy.types.Panel):
     #        return True
     #    return False
 
-    # The buttons within the tab are called here
     def draw(self, context):
+        """The buttons within the tab are called here.
+
+        settings is a PointerProperty that points to the class BlignSettings, where the buttons are defined.
+        """
         layout = self.layout
         layout.use_property_split = True
         settings = context.scene.object_settings
@@ -324,10 +310,9 @@ class Blign_Align(bpy.types.Panel):
         row = layout.row()
         row.operator('rigidbody.blign_align_button1')
 
-# Class that outlines the Align to One Object tab
-
 
 class Blign_One_Object(bpy.types.Panel):
+    """Class that outlines the Align to One Object tab."""
     bl_label = "Align to One Object"
     bl_parent_id = "Blign"
     bl_category = "Geometry"
@@ -341,8 +326,8 @@ class Blign_One_Object(bpy.types.Panel):
     #        return True
     #    return False
 
-    # The buttons within the tab are called here
     def draw(self, context):
+        """The buttons within the Align to One Object tab are called here."""
         layout = self.layout
         layout.use_property_split = True
         settings = context.scene.object_settings
@@ -350,15 +335,12 @@ class Blign_One_Object(bpy.types.Panel):
         row = layout.row()
         row.prop(settings, "Axis", expand=True)
 
-        # row = layout.row()
-        # row.prop(settings, "Direction", expand=True)
-
         row = layout.row()
         row.operator('rigidbody.blign_align_button2')
 
 
-# Class that outlines the Align to Two Objects tab
 class Blign_Two_Objects(bpy.types.Panel):
+    """Class that outlines the Align to Two Objects tab."""
     bl_label = "Align to Two Objects"
     bl_parent_id = "Blign"
     bl_category = "Geometry"
@@ -374,27 +356,20 @@ class Blign_Two_Objects(bpy.types.Panel):
 
     # The buttons within the tab are called here
     def draw(self, context):
+        """Buttons within Align to Two Objects tab are called here."""
         layout = self.layout
         layout.use_property_split = True
 
-        # If two objects are selected show align button else don't show
-
-        if len([o for o in context.selected_objects if o.blign]) == 2:
-            # align
-            pass
-
-        # row = layout.row()
-        # row.prop(object.blign_props, 'ob1')
-
-        # row = layout.row()
-        # row.prop(object.blign_props, 'ob2')
+        # if len([o for o in context.selected_objects if o.blign]) == 2:
+        #    align
+        #    pass
 
         row = layout.row()
         row.operator('rigidbody.blign_align_button2')
 
 
-# Class that outlines the Distribute tab
 class Blign_Distribute(bpy.types.Panel):
+    """Class that outlines the Distribute tab."""
     bl_label = "Distribute"
     bl_parent_id = "Blign"
     bl_category = "Geometry"
@@ -408,8 +383,8 @@ class Blign_Distribute(bpy.types.Panel):
     #        return True
     #    return False
 
-    # The buttons within the tab are called here
     def draw(self, context):
+        """The buttons within the Distribute tab are called within this function."""
         layout = self.layout
         layout.use_property_split = True
         settings = context.scene.object_settings
@@ -427,7 +402,6 @@ class Blign_Distribute(bpy.types.Panel):
         row.operator('rigidbody.blign_distribute_button')
 
 
-# List of all classes, used to register each class
 classes = (
     Add_Object,
     Remove_Object,
@@ -442,26 +416,23 @@ classes = (
     Blign_Distribute,
 )
 
-# Registers classes and defines new things
-
 
 def register():
+    """Registers classes and defines scene.object_settings and object.blign.
+
+    Creates new subset of bpy.types.scene called object_Settings that points to BlignSettings.
+    Creates new subset of bpy.types.object called blign.
+    """
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Creates new subset of bpy.types.scene called object_Settings
     bpy.types.Scene.object_settings = bpy.props.PointerProperty(
         type=BlignSettings)
-    # Creates new subset of bpy.types.object called blign
     bpy.types.Object.blign = bpy.props.BoolProperty(
         name="Blign")  # change bool to something
-    # Creates new subset of bpy.types.object called blign_props
-   # bpy.types.Object.blign_props = bpy.props.PointerProperty(
-   #     type = BlignSettings)
-
-# Unregisters classes
 
 
 def unregister():
+    """Unregisters classes."""
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
