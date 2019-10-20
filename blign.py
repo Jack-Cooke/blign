@@ -2,9 +2,10 @@ import math
 import mathutils
 import bpy
 import numpy as np
+#from sympy import Eq, Symbol, solve
 bl_info = {
     "name": "Blign",
-    "author": "Team Wilmer",
+    "author": "Wilmer Lab Group",
     "version": (1, 0),
     "blender": (2, 80, 0),
     "location": "3D View Sidebar > Geometry tab",
@@ -21,23 +22,16 @@ class Add_Object(bpy.types.Operator):
     bl_label = "Add Object"
     bl_description = "Set selected object as a blign object"
 
-    # defines the object as MESH
-    @classmethod
-    def poll(cls, context):
-        if context.object:
-            return context.object.type == 'MESH'
 
 # Sets the object as object.blign
+
     def execute(self, context):
         for object in context.selected_objects:
             if not object.blign:
                 context.view_layer.objects.active = object
-                # Make sure it is a rigid body
-                if object.rigid_body is None:
-                    bpy.ops.rigidbody.object_add()
-
                 # Sets object as blign object
                 object.blign = True
+
         return {'FINISHED'}
 
 # Class that defines the Remove Object button
@@ -58,12 +52,9 @@ class Remove_Object(bpy.types.Operator):
         for object in context.selected_objects:
             if object.blign:
                 context.view_layer.objects.active = object
-
-                # Remove rigidbody if not already removed
-                if bpy.context.object.rigid_body:
-                    bpy.ops.rigidbody.object_remove()
-
+                # Sets object as blign object
                 context.object.blign = False
+
         return {'FINISHED'}
 
 
@@ -75,12 +66,8 @@ class Blign_Align_Button1(bpy.types.Operator):
     bl_label = "Align"
     bl_description = "Align selected objects"
 
-    # @classmethod
-    # def poll(cls, context):
-    #    if context.object.blign:
-    #        return context.object.type == 'MESH'
-
     # Moves objects to the chosen axis to align to
+
     def execute(self, context):
         axis = bpy.context.scene.object_settings.Axis
         oblist = bpy.context.selected_objects
@@ -108,17 +95,60 @@ class Blign_Align_Button2(bpy.types.Operator):
     bl_label = "Align"
     bl_description = "Align selected objects"
 
-    # @classmethod
-    # def poll(cls, context):
-    #    if context.object.blign:
-    #        return context.object.type == 'MESH'
+    def execute(self, context):
+        axis = bpy.context.scene.object_settings.Axis
+        oblist = bpy.context.selected_objects
+        i = 0
+        for object in list(bpy.data.objects):
+            if object.blign == True:
+                i += 1
 
-    # Code that gives button function goes here
-    # def execute(self, context):
-    # Apply transforms to all selected projectile objects
-    # apply_transforms(context)
+        if i == 1:
+            for object in list(bpy.data.objects):
+                if object.blign == True:
+                    locx = object.location.x
+                    locy = object.location.y
+                    locz = object.location.z
+            if axis == 'x-axis':
+                for object in oblist:
+                    object.location.y = locy
+                    object.location.z = locz
+            if axis == 'y-axis':
+                for object in oblist:
+                    object.location.x = locx
+                    object.location.z = locz
+            if axis == 'z-axis':
+                for object in oblist:
+                    object.location.x = locx
+                    object.location.y = locy
+        # elif i == 2:
+        #    blobs = []
+        #    for object in list(bpy.data.objects):
+        #        if object.blign == True:
+        #            blobs.append(bpy.context.object.location)
+        #    xdist = blobs[1][0] - blobs[0][0]
+        #    ydist = blobs[1][1] - blobs[0][1]
+        #    zdist = blobs[1][2] - blobs[0][2]
 
-    # return {'FINISHED'}
+        #    v = mathutils.Vector((xdist, ydist, zdist))
+        #    for object in oblist:
+        #        # x = blobs[1][0] + v(0)t
+        #        # y = blobs[1][1] + v(1)t
+        #        # z = blobs[1][2] + v(2)t
+
+        #        otherside = object.location.x * \
+        #            v(0) + object.location.y * v(1) + object.location.z * v(2)
+        #        t = Symbol('t')
+        #        eqn = Eq(v(0)*(blobs[1][0]+v(0)*t)+v(1)*(blobs[1]
+        #                                                 [1]+v(1)*t)+v(2)*(blobs[1][2]+v(2)*t), otherside)
+
+        #        newt = solve(eqn)
+
+        #        object.location.x = blobs[1][0] + v(0) * newt
+        #        object.location.y = blobs[1][1] + v(1) * newt
+        #        object.location.z = blobs[1][2] + v(2) * newt
+
+        return {'FINISHED'}
 
 
 # edge cases still need to be addressed, i.e. what if only one object is selected
@@ -127,11 +157,6 @@ class Blign_Distribute_Button(bpy.types.Operator):
     bl_idname = "rigidbody.blign_distribute_button"
     bl_label = "Distribute"
     bl_description = "Distribute objects"
-
-    # @classmethod
-    # def poll(cls, context):
-    #    if context.object.blign:
-    #        return context.object.type == 'MESH'
 
     def execute(self, context):
         indicate = bpy.context.scene.object_settings.indicate_spacing
@@ -201,25 +226,24 @@ class Blign(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
+        # ob = context.object
 
-        ob = context.object
-        if (ob and ob.blign):
+        i = 0
+        for object in list(bpy.data.objects):
+            if object.blign == True:
+                i += 1
+
+        if (bpy.context.object.blign == True):
             row = layout.row()
-            if(len([object for object in context.selected_objects if object.blign])) > 1:  # changes here
-                row.operator(
-                    'rigidbody.blign_remove_object', text="Remove Objects")
-            else:
-                row.operator('rigidbody.blign_remove_object')
-        else:
-            row = layout.row()
-            if len(context.selected_objects) > 1:
-                row.operator('rigidbody.blign_add_object',
-                             text="Add Objects")
-            else:
+            row.operator('rigidbody.blign_remove_object')
+        elif (bpy.context.object.blign == False):
+            if (i < 2):
+                row = layout.row()
                 row.operator('rigidbody.blign_add_object')
 
-
 # Class that defines all simpler buttons
+
+
 class BlignSettings(bpy.types.PropertyGroup):
     # all update lines have been removed and probably have some real function
 
@@ -253,13 +277,13 @@ class BlignSettings(bpy.types.PropertyGroup):
         options={'HIDDEN'},
     )
 
-    Direction: bpy.props.EnumProperty(
-        name="Direction",
-        items=[("Positive", "+", "Align objects in the positive direction of axis"),
-               ("Negative", "-", "Align objects in the negative direction of axis")],
-        default='Positive',
-        options={'HIDDEN'},
-    )
+    # Direction: bpy.props.EnumProperty(
+    #    name="Direction",
+    #    items=[("Positive", "+", "Align objects in the positive direction of axis"),
+    #           ("Negative", "-", "Align objects in the negative direction of axis")],
+    #    default='Positive',
+    #    options={'HIDDEN'},
+    # )
 
     Axis: bpy.props.EnumProperty(
         name="Axis",
@@ -326,8 +350,8 @@ class Blign_One_Object(bpy.types.Panel):
         row = layout.row()
         row.prop(settings, "Axis", expand=True)
 
-        row = layout.row()
-        row.prop(settings, "Direction", expand=True)
+        # row = layout.row()
+        # row.prop(settings, "Direction", expand=True)
 
         row = layout.row()
         row.operator('rigidbody.blign_align_button2')
@@ -416,8 +440,6 @@ classes = (
     Blign_One_Object,
     Blign_Two_Objects,
     Blign_Distribute,
-
-
 )
 
 # Registers classes and defines new things
