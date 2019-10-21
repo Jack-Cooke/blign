@@ -119,32 +119,45 @@ class Blign_Align_Button2(bpy.types.Operator):
                 for object in oblist:
                     object.location.x = locx
                     object.location.y = locy
-        # elif i == 2:
-        #    blobs = []
-        #    for object in list(bpy.data.objects):
-        #        if object.blign == True:
-        #            blobs.append(bpy.context.object.location)
-        #    xdist = blobs[1][0] - blobs[0][0]
-        #    ydist = blobs[1][1] - blobs[0][1]
-        #    zdist = blobs[1][2] - blobs[0][2]
+        elif i == 2:
+            p1, p2 = [np.array(o.location)
+                      for o in bpy.data.objects if o.blign]
+            u = p2 - p1
+            a = np.array([[(u ** 2).sum()]])
 
-        #    v = mathutils.Vector((xdist, ydist, zdist))
-        #    for object in oblist:
-        #        # x = blobs[1][0] + v(0)t
-        #        # y = blobs[1][1] + v(1)t
-        #        # z = blobs[1][2] + v(2)t
+            for obj in context.selected_objects:
+                p = np.array([obj.location.x, obj.location.y, obj.location.z])
+                b = np.array([[(u * (p - p2)).sum()]])
+                t = np.linalg.solve(a, b)
+                v = u * t[0][0] + (p2 - p)
+                obj.location.x += v[0]
+                obj.location.y += v[1]
+                obj.location.z += v[2]
 
-        #        otherside = object.location.x * \
-        #            v(0) + object.location.y * v(1) + object.location.z * v(2)
-        #        t = Symbol('t')
-        #        eqn = Eq(v(0)*(blobs[1][0]+v(0)*t)+v(1)*(blobs[1]
-        #                                                 [1]+v(1)*t)+v(2)*(blobs[1][2]+v(2)*t), otherside)
+        # #    for object in list(bpy.data.objects):
+        # #        if object.blign == True:
+        # #            blobs.append(bpy.context.object.location)
+        #     xdist = blobs[1][0] - blobs[0][0]
+        #     ydist = blobs[1][1] - blobs[0][1]
+        #     zdist = blobs[1][2] - blobs[0][2]
 
-        #        newt = solve(eqn)
+        #     v = mathutils.Vector((xdist, ydist, zdist))
+        #     for object in oblist:
+        #         # x = blobs[1][0] + v(0)t
+        #         # y = blobs[1][1] + v(1)t
+        #         # z = blobs[1][2] + v(2)t
 
-        #        object.location.x = blobs[1][0] + v(0) * newt
-        #        object.location.y = blobs[1][1] + v(1) * newt
-        #        object.location.z = blobs[1][2] + v(2) * newt
+        #         otherside = object.location.x * \
+        #             v(0) + object.location.y * v(1) + object.location.z * v(2)
+        #         t = Symbol('t')
+        #         eqn = Eq(v(0)*(blobs[1][0]+v(0)*t)+v(1)*(blobs[1]
+        #                                                  [1]+v(1)*t)+v(2)*(blobs[1][2]+v(2)*t), otherside)
+
+        #         newt = solve(eqn)
+
+        #         object.location.x = blobs[1][0] + v(0) * newt
+        #         object.location.y = blobs[1][1] + v(1) * newt
+        #         object.location.z = blobs[1][2] + v(2) * newt
         else:
             pass
 
@@ -436,3 +449,5 @@ def unregister():
     """Unregisters classes."""
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    del bpy.types.Scene.object_settings
+    del bpy.types.Object.blign
