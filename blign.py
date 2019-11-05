@@ -14,6 +14,9 @@ bl_info = {
     "category": "Geometry"
 }
 
+# **********bounding box **********
+# to get boundibng box use dimension instead of location.x
+
 
 class Add_Object(bpy.types.Operator):
     """Class that defines the Add Object button."""
@@ -230,37 +233,13 @@ class Blign_Distribute_Button(bpy.types.Operator):
                     p1, p2 = [np.array(o.location)
                               for o in bpy.data.objects if o.blign]
                     v = p2 - p1
-                    vmag = ((v[0] ** 2 + v[1] ** 2 + v[2] ** 2) ** .5)
-                    u = v / vmag
+                    u = v / np.linalg.norm(v)  # magnitude of vector v
                     i = 0
                     for obj in context.selected_objects:
                         obj.location.x = p1[0] + u[0] * spacing * i
                         obj.location.y = p1[1] + u[1] * spacing * i
                         obj.location.z = p1[2] + u[2] * spacing * i
                         i += 1
-
-            #     spacing = bpy.context.scene.object_settings.Spacing
-            #     if axis == 'x-axis':
-            #         pos_list = [o.location.x for o in oblist]
-            #         obj_idx = np.argsort(pos_list)
-            #         distance = max(pos_list) - min(pos_list)
-            #         for i, idx in enumerate(obj_idx):
-            #             oblist[idx].location.x = oblist[obj_idx[0]
-            #                                             ].location.x + spacing * i
-            #     elif axis == 'y-axis':
-            #         pos_list = [o.location.y for o in oblist]
-            #         obj_idx = np.argsort(pos_list)
-            #         distance = max(pos_list) - min(pos_list)
-            #         for i, idx in enumerate(obj_idx):
-            #             oblist[idx].location.y = oblist[obj_idx[0]
-            #                                             ].location.y + spacing * i
-            #     elif axis == 'z-axis':
-            #         pos_list = [o.location.z for o in oblist]
-            #         obj_idx = np.argsort(pos_list)
-            #         distance = max(pos_list) - min(pos_list)
-            #         for i, idx in enumerate(obj_idx):
-            #             oblist[idx].location.z = oblist[obj_idx[0]
-            #                                             ].location.z + spacing * i
 
         return {'FINISHED'}
 
@@ -282,6 +261,11 @@ class Blign(bpy.types.Panel):
         layout = self.layout
         layout.use_property_split = True
 
+        blobs = []
+        for object in list(bpy.data.objects):
+            if object.blign == True:
+                blobs.append(object.name)
+
         i = 0
         for object in list(bpy.data.objects):
             if object.blign == True:
@@ -297,10 +281,19 @@ class Blign(bpy.types.Panel):
                     row.operator('rigidbody.blign_add_object')
         except AttributeError:
             pass
+        if i == 1:
+            row = layout.row()
+            row.label(text=str(blobs[0]))
+        elif i == 2:
+            row = layout.row()
+            row.label(text=str(blobs[0]))
+            row = layout.row()
+            row.label(text=str(blobs[1]))
 
 
 class BlignSettings(bpy.types.PropertyGroup):
     """All buttons used in the add-on are defined in this class."""
+
     Axis: bpy.props.EnumProperty(
         name="Axis",
         items=[("x-axis", "x", "Align objects in the x direction"),
