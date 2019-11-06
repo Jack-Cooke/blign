@@ -18,7 +18,6 @@ bl_info = {
 # to get boundibng box use dimension.x instead of location.x
 
 
-# if all objects are selected, all objects can be added **fix**
 class Add_Object(bpy.types.Operator):
     """Class that defines the Add Object button."""
     bl_idname = "rigidbody.blign_add_object"
@@ -27,10 +26,13 @@ class Add_Object(bpy.types.Operator):
 
     def execute(self, context):
         """Sets the object as object.blign."""
-        for object in context.selected_objects:
-            if not object.blign:
-                context.view_layer.objects.active = object
-                object.blign = True
+        if len(context.selected_objects) == 1:
+            for object in context.selected_objects:
+                if not object.blign:
+                    context.view_layer.objects.active = object
+                    object.blign = True
+        else:
+            pass
 
         return {'FINISHED'}
 
@@ -428,14 +430,13 @@ class Blign(bpy.types.Panel):
                     row.operator('rigidbody.blign_add_object')
         except AttributeError:
             pass
-        if i == 1:
-            row = layout.row()
-            row.label(text=str(blobs[0]))
-        elif i == 2:
-            row = layout.row()
-            row.label(text=str(blobs[0]))
-            row = layout.row()
-            row.label(text=str(blobs[1]))
+
+# Objects are always sorted alphabetically, figure out how to change
+        row = layout.row()
+        row.label(text="Object 1: {}".format(str(blobs[0])))
+
+        row = layout.row()
+        row.label(text="Object 2: {}".format(str(blobs[1])))
 
 
 class BlignSettings(bpy.types.PropertyGroup):
@@ -534,7 +535,7 @@ class Blign_Principal_Axes(bpy.types.Panel):
         row.operator('rigidbody.blign_distribute_button0')
 
 
-class Blign_One_Object(bpy.types.Panel):  # One object
+class Blign_One_Object(bpy.types.Panel):
     """Class that outlines the Align to One Object tab."""
     bl_label = "Align to One Object"
     bl_parent_id = "Blign"
@@ -563,7 +564,7 @@ class Blign_One_Object(bpy.types.Panel):  # One object
         row.operator('rigidbody.blign_distribute_button1')
 
 
-class Blign_Two_Objects(bpy.types.Panel):  # two objects
+class Blign_Two_Objects(bpy.types.Panel):
     """Class that outlines the Align to Two Objects tab."""
     bl_label = "Align to Two Objects"
     bl_parent_id = "Blign"
