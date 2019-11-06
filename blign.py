@@ -502,7 +502,7 @@ class BlignSettings(bpy.types.PropertyGroup):
     )
 
 
-class Blign_Align(bpy.types.Panel):  # principal axes
+class Blign_Principal_Axes(bpy.types.Panel):
     """Class that outlines the Align tab."""
     bl_label = "Principal Axes"
     bl_parent_id = "Blign"
@@ -600,7 +600,7 @@ classes = (
     Blign_Distribute_Button2,
     Blign,
     BlignSettings,
-    Blign_Align,
+    Blign_Principal_Axes,
     Blign_One_Object,
     Blign_Two_Objects,
 )
