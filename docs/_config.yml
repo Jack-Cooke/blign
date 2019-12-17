@@ -1,0 +1,11 @@
+theme: jekyll-theme-minimal
+title: Blign
+description: Blender align and distribute plug-in
+show_downloads: True
+navigation:
+  - title: Home
+    url: /
+  - title: Installation
+    url: installation
+  - title: Usage
+    url: usage
