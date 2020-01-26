@@ -17,11 +17,248 @@ bl_info = {
 
 
 def count_blign_objects():
-    i = 0
-    for obj in list(bpy.data.objects):
-        if obj.blign == True:
-            i += 1
-    return i
+    """
+    Counts the number of selected Blign objects.
+
+    Arguments
+    ---------
+    None
+
+    Returns
+    -------
+    i : int
+        Number of Blign objects
+    """
+    return len([obj for obj in list(bpy.data.objects) if obj.blign == True])
+    # i = 0
+    # for obj in list(bpy.data.objects):
+    #     if obj.blign == True:
+    #         i += 1
+    # return i
+
+
+def find_alignment_points(direction, vertex_sign):
+    """
+    Finds the points on the Blign objects that makes up the alignment line.
+
+    Arguments
+    ---------
+    direction : str
+        Direction in 3D space ['x', 'y', 'z']
+    vertex_sign : str
+        Sign of the vertex ['+', '-']
+
+    
+    Returns
+    -------
+    i : int
+        Number of Blign objects
+    """
+    if count_blign_objects() == 2:
+        blign1, blign2 = [np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box]) for obj in bpy.data.objects if obj.blign]
+        drx_idx = {'x': 0, 'y': 1, 'z': 2}[direction]
+        vertex_idx = {'-': 0, '+': -1}[vertex_sign]
+        p1, p2 = blign1[np.argsort(blign1[:, drx_idx])[vertex_idx]], blign2[np.argsort(blign2[:, drx_idx])[vertex_idx]]
+    else:
+        raise ValueError('There should be 2 Blign objects selected!')
+    return p1, p2
+
+
+def find_vertex(obj, direction, vertex_sign):
+    """
+    Finds the 3d coordinates for a specified vertex on a given object.
+
+    Arguments
+    ---------
+    obj : Blender object
+        Object to find the vertex
+    direction : str
+        Direction in 3D space ['x', 'y', 'z']
+    vertex_sign : str
+        Sign of the vertex ['+', '-']
+
+    
+    Returns
+    -------
+    i : int
+        Number of Blign objects
+    """
+    drx_idx = {'x': 0, 'y': 1, 'z': 2}[direction]
+    vertex_idx = {'-': 0, '+': -1}[vertex_sign]
+    vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
+    p = vertices[np.argsort(vertices[:, drx_idx])[vertex_idx]]
+    return p
+
+
+def transform_object(obj, v):
+    """
+    Transforms the object to the desired position.
+
+    Arguments
+    ---------
+    obj : Blender object
+        Object to find the vertex
+    v : float (or vector?)
+        Vector along which the object needs to be transformed ['x', 'y', 'z']
+
+
+    Returns
+    -------
+    obj : Blender object
+        Object to find the vertex
+    """
+    obj.location.x += v[0]
+    obj.location.y += v[1]
+    obj.location.z += v[2]
+    return obj
+
+
+def align_0():
+    """
+    Aligns the object on the principal, function called in Blign_Align_Button0.
+
+    Arguments
+    ---------
+
+    Returns
+    -------
+    """
+    axis = bpy.context.scene.object_settings.Axis0
+    oblist = bpy.context.selected_objects
+    directionx = bpy.context.scene.object_settings.x_selected0
+    directiony = bpy.context.scene.object_settings.y_selected0
+    directionz = bpy.context.scene.object_settings.z_selected0
+
+    if axis == 'x-axis':
+        if directionx == 'center':
+            for obj in oblist:
+                obj.location.y = 0
+                obj.location.z = 0
+        else:
+            for obj in oblist:
+                v = find_vertex(obj, directionx[1], directionx[0])
+                obj = transform_object(obj, [0, -v[1], -v[2]])
+    elif axis == 'y-axis':
+        if directiony == 'center':
+            for obj in oblist:
+                obj.location.x = 0
+                obj.location.z = 0
+        else:
+            for obj in oblist:
+                v = find_vertex(obj, directiony[1], directiony[0])
+                obj = transform_object(obj, [-v[0], 0, -v[2]])
+    elif axis == 'z-axis':
+        if directionz == 'center':
+            for obj in oblist:
+                obj.location.x = 0
+                obj.location.y = 0
+        else:
+             for obj in oblist:
+                v = find_vertex(obj, directionz[1], directionz[0])
+                obj = transform_object(obj, [-v[0], -v[1], 0])
+    
+
+def align_1():
+    """
+    Aligns the object to an added Blign object, function called in Blign_Align_Button1.
+
+    Arguments
+    ---------
+
+    Returns
+    -------
+    """
+    axis = bpy.context.scene.object_settings.Axis1
+    oblist = bpy.context.selected_objects
+    directionx = bpy.context.scene.object_settings.x_selected1
+    directiony = bpy.context.scene.object_settings.y_selected1
+    directionz = bpy.context.scene.object_settings.z_selected1
+
+    if axis == 'x-axis':
+        if directionx == 'center':
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    locy = obj.location.y
+                    locz = obj.location.z
+            for obj in oblist:
+                obj.location.y = locy
+                obj.location.z = locz
+        else:
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    blign_vertex = find_vertex(obj, directionx[1], directionx[0])
+            for obj in oblist:
+                v = find_vertex(obj, directionx[1], directionx[0])
+                delta = blign_vertex - v
+                obj = transform_object(obj, [0, delta[1], delta[2]])
+    elif axis == 'y-axis':
+        if directiony == 'center':
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    locx = obj.location.x
+                    locz = obj.location.z
+            for obj in oblist:
+                obj.location.x = locx
+                obj.location.z = locz
+        else:
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    blign_vertex = find_vertex(obj, directiony[1], directiony[0])
+            for obj in oblist:
+                v = find_vertex(obj, directiony[1], directiony[0])
+                delta = blign_vertex - v
+                obj = transform_object(obj, [delta[0], 0, delta[2]])
+    elif axis == 'z-axis':
+        if directionz == 'center':
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    locx = obj.location.x
+                    locy = obj.location.y
+            for obj in oblist:
+                obj.location.x = locx
+                obj.location.y = locy
+        else:
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    blign_vertex = find_vertex(obj, directionz[1], directionz[0])
+            for obj in oblist:
+                v = find_vertex(obj, directionz[1], directionz[0])
+                delta = blign_vertex - v
+                obj = transform_object(obj, [delta[0], delta[1], 0])
+
+
+def align_2():
+    """
+    Aligns the object to two added Blign objects, function called in Blign_Align_Button2.
+
+    Arguments
+    ---------
+
+    Returns
+    -------
+    """
+    align = bpy.context.scene.object_settings.align_to_2_ops
+    oblist = bpy.context.selected_objects
+
+    if align == 'center':
+        p1, p2 = [np.array(o.location) for o in bpy.data.objects if o.blign]
+    else:
+        p1, p2 = find_alignment_points(align[1], align[0])
+
+    u = p2 - p1
+    a = np.array([[(u ** 2).sum()]])
+
+    for obj in oblist:
+        if obj.blign == False:
+            if align == 'center':
+                p = np.array([obj.location.x, obj.location.y, obj.location.z])
+            else:
+                p = find_vertex(obj, align[1], align[0])
+            b = np.array([[(u * (p - p2)).sum()]])
+            t = np.linalg.solve(a, b)
+            v = u * t[0][0] + (p2 - p)
+
+            obj = transform_object(obj, v)
 
 
 class Add_Object(bpy.types.Operator):
@@ -76,115 +313,10 @@ class Blign_Align_Button0(bpy.types.Operator):
 
         If number of blign objects = 0, aligns selected objects to the selected axis.
         """
-        axis = bpy.context.scene.object_settings.Axis0
-        oblist = bpy.context.selected_objects
-        directionx = bpy.context.scene.object_settings.x_selected0
-        directiony = bpy.context.scene.object_settings.y_selected0
-        directionz = bpy.context.scene.object_settings.z_selected0
-        direction = [directionx, directiony, directionz]
-
         i = count_blign_objects()
 
         if i == 0:
-            if axis == 'x-axis':
-                if direction[0] == 'center':
-                    for obj in oblist:
-                        obj.location.y = 0
-                        obj.location.z = 0
-                elif direction[0] == 'posy':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 1])[-1]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.y += delta[1]
-                        obj.location.z += delta[2]
-                elif directionx == 'negy':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 1])[0]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.y += delta[1]
-                        obj.location.z += delta[2]
-                elif directionx == 'posz':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 2])[-1]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.y += delta[1]
-                        obj.location.z += delta[2]
-                elif directionx == 'negz':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 2])[0]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.y += delta[1]
-                        obj.location.z += delta[2]
-            elif axis == 'y-axis':
-                if directiony == 'center':
-                    for obj in oblist:
-                        obj.location.x = 0
-                        obj.location.z = 0
-                elif directiony == 'posx':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 0])[-1]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.z += delta[2]
-                elif directiony == 'negx':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 0])[0]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.z += delta[2]
-                elif directiony == 'posz':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 2])[-1]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.z += delta[2]
-                elif directiony == 'negz':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 2])[0]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.z += delta[2]
-            elif axis == 'z-axis':
-                if directionz == 'center':
-                    for obj in oblist:
-                        obj.location.x = 0
-                        obj.location.y = 0
-                elif directionz == 'posx':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 0])[-1]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.y += delta[1]
-                elif directionz == 'negx':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 0])[0]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.y += delta[1]
-                elif directionz == 'posy':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 1])[-1]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.y += delta[1]
-                elif directionz == 'negy':
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 1])[0]]
-                        delta = [0, 0, 0] - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.y += delta[1]
+            align_0()
         else:
             pass
 
@@ -202,177 +334,10 @@ class Blign_Align_Button1(bpy.types.Operator):
 
         If number of blign objects = 1, aligns selected objects to that one object.
         """
-        axis = bpy.context.scene.object_settings.Axis1
-        oblist = bpy.context.selected_objects
-        directionx = bpy.context.scene.object_settings.x_selected1
-        directiony = bpy.context.scene.object_settings.y_selected1
-        directionz = bpy.context.scene.object_settings.z_selected1
-
-        i = 0
-        for object in list(bpy.data.objects):
-            if object.blign == True:
-                i += 1
+        i = count_blign_objects()
 
         if i == 1:
-            if axis == 'x-axis':
-                if directionx == 'center':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            locy = obj.location.y
-                            locz = obj.location.z
-                    for obj in oblist:
-                        obj.location.y = locy
-                        obj.location.z = locz
-                elif directionx == 'posy':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 1])[-1]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 1])[-1]]
-                        delta = top_blign - top_obj
-                        obj.location.y += delta[1]
-                        obj.location.z += delta[2]
-                elif directionx == 'negy':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 1])[0]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 1])[0]]
-                        delta = top_blign - top_obj
-                        obj.location.y += delta[1]
-                        obj.location.z += delta[2]
-                elif directionx == 'posz':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 2])[-1]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 2])[-1]]
-                        delta = top_blign - top_obj
-                        obj.location.y += delta[1]
-                        obj.location.z += delta[2]
-                elif directionx == 'negz':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 2])[0]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 2])[0]]
-                        delta = top_blign - top_obj
-                        obj.location.y += delta[1]
-                        obj.location.z += delta[2]
-            elif axis == 'y-axis':
-                if directiony == 'center':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            locx = obj.location.x
-                            locz = obj.location.z
-                    for obj in oblist:
-                        obj.location.x = locx
-                        obj.location.z = locz
-                elif directiony == 'posx':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 0])[-1]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 0])[-1]]
-                        delta = top_blign - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.z += delta[2]
-                elif directiony == 'negx':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 0])[0]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 0])[0]]
-                        delta = top_blign - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.z += delta[2]
-                elif directiony == 'posz':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 2])[-1]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 2])[-1]]
-                        delta = top_blign - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.z += delta[2]
-                elif directiony == 'negz':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 2])[0]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 2])[0]]
-                        delta = top_blign - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.z += delta[2]
-            elif axis == 'z-axis':
-                if directionz == 'center':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            locx = obj.location.x
-                            locy = obj.location.y
-                    for obj in oblist:
-                        obj.location.x = locx
-                        obj.location.y = locy
-                elif directionz == 'posx':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 0])[-1]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 0])[-1]]
-                        delta = top_blign - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.y += delta[1]
-                elif directionz == 'negx':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 0])[0]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 0])[0]]
-                        delta = top_blign - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.y += delta[1]
-                elif directionz == 'posy':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 1])[-1]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 1])[-1]]
-                        delta = top_blign - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.y += delta[1]
-                elif directionz == 'negy':
-                    for obj in list(bpy.data.objects):
-                        if obj.blign == True:
-                            vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                            top_blign = vertices[np.argsort(vertices[:, 1])[0]]
-                    for obj in oblist:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        top_obj = vertices[np.argsort(vertices[:, 1])[0]]
-                        delta = top_blign - top_obj
-                        obj.location.x += delta[0]
-                        obj.location.y += delta[1]
+            align_1()
         else:
             pass
 
@@ -390,64 +355,23 @@ class Blign_Align_Button2(bpy.types.Operator):
 
         If number of blign objects = 2, aligns selected objects along the line between the 2 blign objects.
         """
-        align = bpy.context.scene.object_settings.align_to_2_ops
-        oblist = bpy.context.selected_objects
+        # align = bpy.context.scene.object_settings.align_to_2_ops
+        # oblist = bpy.context.selected_objects
 
-        i = 0
-        for object in list(bpy.data.objects):
-            if object.blign == True:
-                i += 1
+        i = count_blign_objects()
 
         if i == 2:
-            if align == 'center':
-                p1, p2 = [np.array(o.location) for o in bpy.data.objects if o.blign]
-            else:
-                blign1, blign2 = [np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box]) for obj in bpy.data.objects if obj.blign]
-                if align == 'posx':
-                    p1, p2 = blign1[np.argsort(blign1[:, 0])[-1]], blign2[np.argsort(blign2[:, 0])[-1]]
-                elif align == 'negx':
-                    p1, p2 = blign1[np.argsort(blign1[:, 0])[0]], blign2[np.argsort(blign2[:, 0])[0]]
-                elif align == 'posy':
-                    p1, p2 = blign1[np.argsort(blign1[:, 1])[-1]], blign2[np.argsort(blign2[:, 1])[-1]]
-                elif align == 'negy':
-                    p1, p2 = blign1[np.argsort(blign1[:, 1])[0]], blign2[np.argsort(blign2[:, 1])[0]]
-                elif align == 'posz':
-                    p1, p2 = blign1[np.argsort(blign1[:, 2])[-1]], blign2[np.argsort(blign2[:, 2])[-1]]
-                elif align == 'negz':
-                    p1, p2 = blign1[np.argsort(blign1[:, 2])[0]], blign2[np.argsort(blign2[:, 2])[0]]
-
-            u = p2 - p1
-            a = np.array([[(u ** 2).sum()]])
-
-            for obj in oblist:
-                if obj.blign == False:
-                    if align == 'center':
-                        p = np.array([obj.location.x, obj.location.y, obj.location.z])
-                    else:
-                        vertices = np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box])
-                        if align == 'posx':
-                            p = vertices[np.argsort(vertices[:, 0])[-1]]
-                        elif align == 'negx':
-                            p = vertices[np.argsort(vertices[:, 0])[0]]
-                        elif align == 'posy':
-                            p = vertices[np.argsort(vertices[:, 1])[-1]]
-                        elif align == 'negy':
-                            p = vertices[np.argsort(vertices[:, 1])[0]]
-                        elif align == 'posz':
-                            p = vertices[np.argsort(vertices[:, 2])[-1]]
-                        elif align == 'negz':
-                            p = vertices[np.argsort(vertices[:, 2])[0]]
-                    b = np.array([[(u * (p - p2)).sum()]])
-                    t = np.linalg.solve(a, b)
-                    v = u * t[0][0] + (p2 - p)
-                    obj.location.x += v[0]
-                    obj.location.y += v[1]
-                    obj.location.z += v[2]
+            align_2()
         else:
             pass
 
         return {'FINISHED'}
 
+
+# def distribute_0(obj_idx, x, default_spacing):
+#     oblist = bpy.context.selected_objects
+#     for i, idx in enumerate(obj_idx):
+#         oblist[idx].location.x = oblist[obj_idx[0]].location.x + default_spacing * i
 
 class Blign_Distribute_Button0(bpy.types.Operator):
     """Defines the Distribute button."""
@@ -466,10 +390,7 @@ class Blign_Distribute_Button0(bpy.types.Operator):
         oblist = bpy.context.selected_objects
         dist_type = bpy.context.scene.object_settings.distribute_ops0
 
-        i = 0
-        for object in list(bpy.data.objects):
-            if object.blign == True:
-                i += 1
+        i = count_blign_objects()
 
         if dist_type == 'center':
             if i == 0:
@@ -481,6 +402,7 @@ class Blign_Distribute_Button0(bpy.types.Operator):
                             obj_idx = np.argsort(pos_list)
                             distance = max(pos_list) - min(pos_list)
                             default_spacing = distance / (len(pos_list) - 1)
+                            # distribute_0(obj_idx, x, default_spacing)
                             for i, idx in enumerate(obj_idx):
                                 oblist[idx].location.x = oblist[obj_idx[0]].location.x + default_spacing * i
                         elif axis == 'y-axis':
@@ -488,6 +410,7 @@ class Blign_Distribute_Button0(bpy.types.Operator):
                             obj_idx = np.argsort(pos_list)
                             distance = max(pos_list) - min(pos_list)
                             default_spacing = distance / (len(pos_list) - 1)
+                            # distribute_0(obj_idx, y, default_spacing)
                             for i, idx in enumerate(obj_idx):
                                 oblist[idx].location.y = oblist[obj_idx[0]].location.y + default_spacing * i
                         elif axis == 'z-axis':
@@ -495,6 +418,7 @@ class Blign_Distribute_Button0(bpy.types.Operator):
                             obj_idx = np.argsort(pos_list)
                             distance = max(pos_list) - min(pos_list)
                             default_spacing = distance / (len(pos_list) - 1)
+                            # distribute_0(obj_idx, z, default_spacing)
                             for i, idx in enumerate(obj_idx):
                                 oblist[idx].location.z = oblist[obj_idx[0]].location.z + default_spacing * i
                     else:
@@ -503,18 +427,21 @@ class Blign_Distribute_Button0(bpy.types.Operator):
                             pos_list = [o.location.x for o in oblist]
                             obj_idx = np.argsort(pos_list)
                             distance = max(pos_list) - min(pos_list)
+                            # distribute_0(obj_idx, x, spacing)
                             for i, idx in enumerate(obj_idx):
                                 oblist[idx].location.x = oblist[obj_idx[0]].location.x + spacing * i
                         elif axis == 'y-axis':
                             pos_list = [o.location.y for o in oblist]
                             obj_idx = np.argsort(pos_list)
                             distance = max(pos_list) - min(pos_list)
+                            # distribute_0(obj_idx, y, spacing)
                             for i, idx in enumerate(obj_idx):
                                 oblist[idx].location.y = oblist[obj_idx[0]].location.y + spacing * i
                         elif axis == 'z-axis':
                             pos_list = [o.location.z for o in oblist]
                             obj_idx = np.argsort(pos_list)
                             distance = max(pos_list) - min(pos_list)
+                            # distribute_0(obj_idx, z, spacing)
                             for i, idx in enumerate(obj_idx):
                                 oblist[idx].location.z = oblist[obj_idx[0]].location.z + spacing * i
             else:
@@ -690,10 +617,7 @@ class Blign_Distribute_Button1(bpy.types.Operator):
         oblist = bpy.context.selected_objects
         dist_type = bpy.context.scene.object_settings.distribute_ops1
 
-        i = 0
-        for object in list(bpy.data.objects):
-            if object.blign == True:
-                i += 1
+        i = count_blign_objects()
 
         if dist_type == 'center':
             if i == 1:
@@ -912,10 +836,7 @@ class Blign_Distribute_Button2(bpy.types.Operator):
         oblist = bpy.context.selected_objects
         dist_type = bpy.context.scene.object_settings.distribute_ops2
 
-        i = 0
-        for object in list(bpy.data.objects):
-            if object.blign == True:
-                i += 1
+        i = count_blign_objects()
         
         if dist_type == 'center':
             if i == 2:
@@ -1167,10 +1088,10 @@ class BlignSettings(bpy.types.PropertyGroup):
     x_selected0: bpy.props.EnumProperty(
         name="Align to",
         items=[("center", "Center", "Align to center of object"),
-               ("posy", "+y", "Align objects to their most positive point in the y direction"),
-               ("negy", "-y", "Align objects to their most negative point in the y direction"),
-               ("posz", "+z", "Align objects to their most positive point in the z direction"),
-               ("negz", "-z", "Align objects to their most negative point in the z direction")],
+               ("+y", "+y", "Align objects to their most positive point in the y direction"),
+               ("-y", "-y", "Align objects to their most negative point in the y direction"),
+               ("+z", "+z", "Align objects to their most positive point in the z direction"),
+               ("-z", "-z", "Align objects to their most negative point in the z direction")],
         default='center',
         options={'HIDDEN'},
     )
@@ -1178,10 +1099,10 @@ class BlignSettings(bpy.types.PropertyGroup):
     y_selected0: bpy.props.EnumProperty(
         name="Align to",
         items=[("center", "Center", "Align to center of object"),
-               ("posx", "+x", "Align objects to their most positive point in the x direction"),
-               ("negx", "-x", "Align objects to their most negative point in the x direction"),
-               ("posz", "+z", "Align objects to their most positive point in the z direction"),
-               ("negz", "-z", "Align objects to their most negative point in the z direction")],
+               ("+x", "+x", "Align objects to their most positive point in the x direction"),
+               ("-x", "-x", "Align objects to their most negative point in the x direction"),
+               ("+z", "+z", "Align objects to their most positive point in the z direction"),
+               ("-z", "-z", "Align objects to their most negative point in the z direction")],
         default='center',
         options={'HIDDEN'},
     )
@@ -1189,10 +1110,10 @@ class BlignSettings(bpy.types.PropertyGroup):
     z_selected0: bpy.props.EnumProperty(
         name="Align to",
         items=[("center", "Center", "Align to center of object"),
-               ("posx", "+x", "Align objects to their most positive point in the x direction"),
-               ("negx", "-x", "Align objects to their most negative point in the x direction"),
-               ("posy", "+y", "Align objects to their most positive point in the y direction"),
-               ("negy", "-y", "Align objects to their most negative point in the y direction")],
+               ("+x", "+x", "Align objects to their most positive point in the x direction"),
+               ("-x", "-x", "Align objects to their most negative point in the x direction"),
+               ("+y", "+y", "Align objects to their most positive point in the y direction"),
+               ("-y", "-y", "Align objects to their most negative point in the y direction")],
         default='center',
         options={'HIDDEN'},
     )
@@ -1200,10 +1121,10 @@ class BlignSettings(bpy.types.PropertyGroup):
     x_selected1: bpy.props.EnumProperty(
         name="Align to",
         items=[("center", "Center", "Align to center of object"),
-               ("posy", "+y", "Align objects to their most positive point in the y direction"),
-               ("negy", "-y", "Align objects to their most negative point in the y direction"),
-               ("posz", "+z", "Align objects to their most positive point in the z direction"),
-               ("negz", "-z", "Align objects to their most negative point in the z direction")],
+               ("+y", "+y", "Align objects to their most positive point in the y direction"),
+               ("-y", "-y", "Align objects to their most negative point in the y direction"),
+               ("+z", "+z", "Align objects to their most positive point in the z direction"),
+               ("-z", "-z", "Align objects to their most negative point in the z direction")],
         default='center',
         options={'HIDDEN'},
     )
@@ -1211,10 +1132,10 @@ class BlignSettings(bpy.types.PropertyGroup):
     y_selected1: bpy.props.EnumProperty(
         name="Align to",
         items=[("center", "Center", "Align to center of object"),
-               ("posx", "+x", "Align objects to their most positive point in the x direction"),
-               ("negx", "-x", "Align objects to their most negative point in the x direction"),
-               ("posz", "+z", "Align objects to their most positive point in the z direction"),
-               ("negz", "-z", "Align objects to their most negative point in the z direction")],
+               ("+x", "+x", "Align objects to their most positive point in the x direction"),
+               ("-x", "-x", "Align objects to their most negative point in the x direction"),
+               ("+z", "+z", "Align objects to their most positive point in the z direction"),
+               ("-z", "-z", "Align objects to their most negative point in the z direction")],
         default='center',
         options={'HIDDEN'},
     )
@@ -1222,10 +1143,10 @@ class BlignSettings(bpy.types.PropertyGroup):
     z_selected1: bpy.props.EnumProperty(
         name="Align to",
         items=[("center", "Center", "Align to center of object"),
-               ("posx", "+x", "Align objects to their most positive point in the x direction"),
-               ("negx", "-x", "Align objects to their most negative point in the x direction"),
-               ("posy", "+y", "Align objects to their most positive point in the y direction"),
-               ("negy", "-y", "Align objects to their most negative point in the y direction")],
+               ("+x", "+x", "Align objects to their most positive point in the x direction"),
+               ("-x", "-x", "Align objects to their most negative point in the x direction"),
+               ("+y", "+y", "Align objects to their most positive point in the y direction"),
+               ("-y", "-y", "Align objects to their most negative point in the y direction")],
         default='center',
         options={'HIDDEN'},
     )
@@ -1247,12 +1168,12 @@ class BlignSettings(bpy.types.PropertyGroup):
     align_to_2_ops: bpy.props.EnumProperty(
         name="Align to",
         items=[("center", "Center", "Align to center of object"),
-               ("posx", "+x", "Align objects to their most positive point in the x direction"),
-               ("negx", "-x", "Align objects to their most negative point in the x direction"),
-               ("posy", "+y", "Align objects to their most positive point in the y direction"),
-               ("negy", "-y", "Align objects to their most negative point in the y direction"),
-               ("posz", "+z", "Align objects to their most positive point in the z direction"),
-               ("negz", "-z", "Align objects to their most negative point in the z direction")],
+               ("+x", "+x", "Align objects to their most positive point in the x direction"),
+               ("-x", "-x", "Align objects to their most negative point in the x direction"),
+               ("+y", "+y", "Align objects to their most positive point in the y direction"),
+               ("-y", "-y", "Align objects to their most negative point in the y direction"),
+               ("+z", "+z", "Align objects to their most positive point in the z direction"),
+               ("-z", "-z", "Align objects to their most negative point in the z direction")],
         default='center',
         options={'HIDDEN'},
     )
