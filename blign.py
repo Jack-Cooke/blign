@@ -113,7 +113,7 @@ def transform_object(obj, v):
     return obj
 
 
-def align_0():
+def align_axis_0():
     """
     Aligns the object on the principal, function called in Blign_Align_Button0.
 
@@ -156,9 +156,51 @@ def align_0():
              for obj in oblist:
                 v = find_vertex(obj, directionz[1], directionz[0])
                 obj = transform_object(obj, [-v[0], -v[1], 0])
-    
 
-def align_1():
+
+def align_plane_0():
+    """
+    Aligns the object to the same plane as an added Blign object, function called in Blign_Align_Button1.
+
+    Arguments
+    ---------
+
+    Returns
+    -------
+    """
+    plane = bpy.context.scene.object_settings.Plane0
+    oblist = bpy.context.selected_objects
+    directionyz = bpy.context.scene.object_settings.yz_selected0
+    directionxz = bpy.context.scene.object_settings.xz_selected0
+    directionxy = bpy.context.scene.object_settings.xy_selected0
+
+    if plane == 'y-z':
+        if directionyz == 'center':
+            for obj in oblist:
+                obj.location.x = 0
+        else:
+            for obj in oblist:
+                v = find_vertex(obj, directionyz[1], directionyz[0])
+                obj = transform_object(obj, [-v[0], 0, 0])
+    elif plane == 'x-z':
+        if directionxz == 'center':
+            for obj in oblist:
+                obj.location.y = 0
+        else:
+            for obj in oblist:
+                v = find_vertex(obj, directionxz[1], directionxz[0])
+                obj = transform_object(obj, [0, -v[1], 0])
+    elif plane == 'x-y':
+        if directionxy == 'center':
+            for obj in oblist:
+                obj.location.z = 0
+        else:
+            for obj in oblist:
+                v = find_vertex(obj, directionxy[1], directionxy[0])
+                obj = transform_object(obj, [0, 0, -v[2]])
+
+
+def align_axis_1():
     """
     Aligns the object to an added Blign object, function called in Blign_Align_Button1.
 
@@ -225,6 +267,69 @@ def align_1():
                 v = find_vertex(obj, directionz[1], directionz[0])
                 delta = blign_vertex - v
                 obj = transform_object(obj, [delta[0], delta[1], 0])
+
+
+def align_plane_1():
+    """
+    Aligns the object to the same plane as the an added Blign object, function called in Blign_Align_Button1.
+
+    Arguments
+    ---------
+
+    Returns
+    -------
+    """
+    plane = bpy.context.scene.object_settings.Plane1
+    oblist = bpy.context.selected_objects
+    directionyz = bpy.context.scene.object_settings.yz_selected1
+    directionxz = bpy.context.scene.object_settings.xz_selected1
+    directionxy = bpy.context.scene.object_settings.xy_selected1
+
+    if plane == 'y-z':
+        if directionyz == 'center':
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    locx = obj.location.x
+            for obj in oblist:
+                obj.location.x = locx
+        else:
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    blign_vertex = find_vertex(obj, directionyz[1], directionyz[0])
+            for obj in oblist:
+                v = find_vertex(obj, directionyz[1], directionyz[0])
+                delta = blign_vertex - v
+                obj = transform_object(obj, [delta[0], 0, 0])
+    elif plane == 'x-z':
+        if directionxz == 'center':
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    locy = obj.location.y
+            for obj in oblist:
+                obj.location.y = locy
+        else:
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    blign_vertex = find_vertex(obj, directionxz[1], directionxz[0])
+            for obj in oblist:
+                v = find_vertex(obj, directionxz[1], directionxz[0])
+                delta = blign_vertex - v
+                obj = transform_object(obj, [0, delta[1], 0])
+    elif plane == 'x-y':
+        if directionxy == 'center':
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    locz = obj.location.z
+            for obj in oblist:
+                obj.location.z = locz
+        else:
+            for obj in list(bpy.data.objects):
+                if obj.blign == True:
+                    blign_vertex = find_vertex(obj, directionxy[1], directionxy[0])
+            for obj in oblist:
+                v = find_vertex(obj, directionxy[1], directionxy[0])
+                delta = blign_vertex - v
+                obj = transform_object(obj, [0, 0, delta[2]])
 
 
 def align_2():
@@ -311,12 +416,16 @@ class Blign_Align_Button0(bpy.types.Operator):
     def execute(self, context):
         """Iterates through all objects, counts number of blign objects.
 
-        If number of blign objects = 0, aligns selected objects to the selected axis.
+        If number of blign objects = 0, aligns selected objects to the selected axis or plane.
         """
         i = count_blign_objects()
+        plane = bpy.context.scene.object_settings.check_plane0
 
         if i == 0:
-            align_0()
+            if plane == False:
+                align_axis_0()
+            else:
+                align_plane_0()
         else:
             pass
 
@@ -335,9 +444,13 @@ class Blign_Align_Button1(bpy.types.Operator):
         If number of blign objects = 1, aligns selected objects to that one object.
         """
         i = count_blign_objects()
+        plane = bpy.context.scene.object_settings.check_plane1
 
         if i == 1:
-            align_1()
+            if plane == False:
+                align_axis_1()
+            else:
+                align_plane_1()
         else:
             pass
 
@@ -1034,12 +1147,44 @@ class BlignSettings(bpy.types.PropertyGroup):
         options={'HIDDEN'},
     )
 
+    check_plane0: bpy.props.BoolProperty(
+        name="Select Plane",
+        description="Choose whether or not to align objects to a plane",
+        options={'HIDDEN'},
+        default=False
+    )
+
+    Plane0: bpy.props.EnumProperty(
+        name="Plane",
+        items=[("y-z", "y-z", "Align objects to the y-z plane"),
+               ("x-z", "x-z", "Align objects to the x-z plane"),
+               ("x-y", "x-y", "Align objects to the x-y plane")],
+        default='y-z',
+        options={'HIDDEN'},
+    )
+
     Axis1: bpy.props.EnumProperty(
         name="Axis",
         items=[("x-axis", "x", "Align objects in the x direction"),
                ("y-axis", "y", "Align objects in the y direction"),
                ("z-axis", "z", "Align objects in the z direction")],
         default='x-axis',
+        options={'HIDDEN'},
+    )
+
+    check_plane1: bpy.props.BoolProperty(
+        name="Select Plane",
+        description="Choose whether or not to align objects to a plane",
+        options={'HIDDEN'},
+        default=False
+    )
+
+    Plane1: bpy.props.EnumProperty(
+        name="Plane",
+        items=[("y-z", "y-z", "Align objects to the y-z plane"),
+               ("x-z", "x-z", "Align objects to the x-z plane"),
+               ("x-y", "x-y", "Align objects to the x-y plane")],
+        default='y-z',
         options={'HIDDEN'},
     )
 
@@ -1118,6 +1263,33 @@ class BlignSettings(bpy.types.PropertyGroup):
         options={'HIDDEN'},
     )
 
+    yz_selected0: bpy.props.EnumProperty(
+        name="Align to",
+        items=[("center", "Center", "Align to center of object"),
+               ("+x", "+x", "Align objects to their most positive point in the y direction"),
+               ("-x", "-x", "Align objects to their most negative point in the y direction")],
+        default='center',
+        options={'HIDDEN'},
+    )
+
+    xz_selected0: bpy.props.EnumProperty(
+        name="Align to",
+        items=[("center", "Center", "Align to center of object"),
+               ("+y", "+y", "Align objects to their most positive point in the y direction"),
+               ("-y", "-y", "Align objects to their most negative point in the y direction")],
+        default='center',
+        options={'HIDDEN'},
+    )
+
+    xy_selected0: bpy.props.EnumProperty(
+        name="Align to",
+        items=[("center", "Center", "Align to center of object"),
+               ("+z", "+z", "Align objects to their most positive point in the y direction"),
+               ("-z", "-z", "Align objects to their most negative point in the y direction")],
+        default='center',
+        options={'HIDDEN'},
+    )
+
     x_selected1: bpy.props.EnumProperty(
         name="Align to",
         items=[("center", "Center", "Align to center of object"),
@@ -1147,6 +1319,33 @@ class BlignSettings(bpy.types.PropertyGroup):
                ("-x", "-x", "Align objects to their most negative point in the x direction"),
                ("+y", "+y", "Align objects to their most positive point in the y direction"),
                ("-y", "-y", "Align objects to their most negative point in the y direction")],
+        default='center',
+        options={'HIDDEN'},
+    )
+
+    yz_selected1: bpy.props.EnumProperty(
+        name="Align to",
+        items=[("center", "Center", "Align to center of object"),
+               ("+x", "+x", "Align objects to their most positive point in the y direction"),
+               ("-x", "-x", "Align objects to their most negative point in the y direction")],
+        default='center',
+        options={'HIDDEN'},
+    )
+
+    xz_selected1: bpy.props.EnumProperty(
+        name="Align to",
+        items=[("center", "Center", "Align to center of object"),
+               ("+y", "+y", "Align objects to their most positive point in the y direction"),
+               ("-y", "-y", "Align objects to their most negative point in the y direction")],
+        default='center',
+        options={'HIDDEN'},
+    )
+
+    xy_selected1: bpy.props.EnumProperty(
+        name="Align to",
+        items=[("center", "Center", "Align to center of object"),
+               ("+z", "+z", "Align objects to their most positive point in the y direction"),
+               ("-z", "-z", "Align objects to their most negative point in the y direction")],
         default='center',
         options={'HIDDEN'},
     )
@@ -1205,7 +1404,7 @@ class BlignSettings(bpy.types.PropertyGroup):
 
 class Blign_Principal_Axes(bpy.types.Panel):
     """Class that outlines the Align tab."""
-    bl_label = "Principal Axes"
+    bl_label = "Principal Axes/Planes"
     bl_parent_id = "Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
@@ -1221,19 +1420,39 @@ class Blign_Principal_Axes(bpy.types.Panel):
         layout.use_property_split = True
         settings = context.scene.object_settings
         axis = bpy.context.scene.object_settings.Axis0
+        check_plane = bpy.context.scene.object_settings.check_plane0
+        plane = bpy.context.scene.object_settings.Plane0
 
         row = layout.row()
-        row.prop(settings, "Axis0", expand=True)
+        row.alignment = 'RIGHT'
+        row.prop(settings, "check_plane0")
 
-        if axis == 'x-axis':
-            row = layout.row()
-            row.prop(settings, "x_selected0")
-        elif axis == 'y-axis':
-            row = layout.row()
-            row.prop(settings, "y_selected0")
-        elif axis == 'z-axis':
-            row = layout.row()
-            row.prop(settings, "z_selected0")
+        row = layout.row()
+        if check_plane == False:
+            row.prop(settings, "Axis0", expand=True)
+        elif check_plane == True:
+            row.prop(settings, "Plane0", expand=True)
+
+        if check_plane == False:
+            if axis == 'x-axis':
+                row = layout.row()
+                row.prop(settings, "x_selected0")
+            elif axis == 'y-axis':
+                row = layout.row()
+                row.prop(settings, "y_selected0")
+            elif axis == 'z-axis':
+                row = layout.row()
+                row.prop(settings, "z_selected0")
+        elif check_plane == True:
+            if plane == 'y-z':
+                row = layout.row()
+                row.prop(settings, "yz_selected0")
+            elif plane == 'x-z':
+                row = layout.row()
+                row.prop(settings, "xz_selected0")
+            elif plane == 'x-y':
+                row = layout.row()
+                row.prop(settings, "xy_selected0")
 
         row = layout.row()
         row.operator('rigidbody.blign_align_button0')
@@ -1264,19 +1483,39 @@ class Blign_One_Object(bpy.types.Panel):
         layout.use_property_split = True
         settings = context.scene.object_settings
         axis = bpy.context.scene.object_settings.Axis1
+        check_plane = bpy.context.scene.object_settings.check_plane1
+        plane = bpy.context.scene.object_settings.Plane1
 
         row = layout.row()
-        row.prop(settings, "Axis1", expand=True)
+        row.alignment = 'RIGHT'
+        row.prop(settings, "check_plane1")
 
-        if axis == 'x-axis':
-            row = layout.row()
-            row.prop(settings, "x_selected1")
-        elif axis == 'y-axis':
-            row = layout.row()
-            row.prop(settings, "y_selected1")
-        elif axis == 'z-axis':
-            row = layout.row()
-            row.prop(settings, "z_selected1")
+        row = layout.row()
+        if check_plane == False:
+            row.prop(settings, "Axis1", expand=True)
+        elif check_plane == True:
+            row.prop(settings, "Plane1", expand=True)
+
+        if check_plane == False:
+            if axis == 'x-axis':
+                row = layout.row()
+                row.prop(settings, "x_selected1")
+            elif axis == 'y-axis':
+                row = layout.row()
+                row.prop(settings, "y_selected1")
+            elif axis == 'z-axis':
+                row = layout.row()
+                row.prop(settings, "z_selected1")
+        elif check_plane == True:
+            if plane == 'y-z':
+                row = layout.row()
+                row.prop(settings, "yz_selected1")
+            elif plane == 'x-z':
+                row = layout.row()
+                row.prop(settings, "xz_selected1")
+            elif plane == 'x-y':
+                row = layout.row()
+                row.prop(settings, "xy_selected1")
 
         row = layout.row()
         row.operator('rigidbody.blign_align_button1')
