@@ -22,19 +22,13 @@ def count_blign_objects():
 
     Arguments
     ---------
-    None
 
     Returns
     -------
-    i : int
-        Number of Blign objects
+    len.... : int
+        Number of Blign objects.
     """
     return len([obj for obj in list(bpy.data.objects) if obj.blign == True])
-    # i = 0
-    # for obj in list(bpy.data.objects):
-    #     if obj.blign == True:
-    #         i += 1
-    # return i
 
 
 def find_alignment_points(direction, vertex_sign):
@@ -44,15 +38,16 @@ def find_alignment_points(direction, vertex_sign):
     Arguments
     ---------
     direction : str
-        Direction in 3D space ['x', 'y', 'z']
+        Direction in 3D space ['x', 'y', 'z'].
     vertex_sign : str
-        Sign of the vertex ['+', '-']
+        Sign of the vertex ['+', '-'].
 
-    
     Returns
     -------
-    i : int
-        Number of Blign objects
+    p1 : numpy array
+        Desired vertex on the first Blign object.
+    p2 : numpy array
+        Desired vertex on the second Blign object.
     """
     if count_blign_objects() == 2:
         blign1, blign2 = [np.array([obj.matrix_world @ Vector(c) for c in obj.bound_box]) for obj in bpy.data.objects if obj.blign]
@@ -73,15 +68,14 @@ def find_vertex(obj, direction, vertex_sign):
     obj : Blender object
         Object to find the vertex
     direction : str
-        Direction in 3D space ['x', 'y', 'z']
+        Direction in 3D space ['x', 'y', 'z'].
     vertex_sign : str
-        Sign of the vertex ['+', '-']
+        Sign of the vertex ['+', '-'].
 
-    
     Returns
     -------
-    i : int
-        Number of Blign objects
+    p : numpy array
+        Desired vertex on an object.
     """
     drx_idx = {'x': 0, 'y': 1, 'z': 2}[direction]
     vertex_idx = {'-': 0, '+': -1}[vertex_sign]
@@ -97,20 +91,122 @@ def transform_object(obj, v):
     Arguments
     ---------
     obj : Blender object
-        Object to find the vertex
+        Object to find the vertex.
     v : float (or vector?)
-        Vector along which the object needs to be transformed ['x', 'y', 'z']
-
+        Vector along which the object needs to be transformed ['x', 'y', 'z'].
 
     Returns
     -------
     obj : Blender object
-        Object to find the vertex
+        Object to find the vertex.
     """
     obj.location.x += v[0]
     obj.location.y += v[1]
     obj.location.z += v[2]
     return obj
+
+
+def find_default_spacing(axis):
+    """
+    Function finds the default distance between that objects are being distributed from their centers.
+
+    Arguments
+    ---------
+    axis : str
+        The axis that objects get aligned to.
+
+    Returns
+    -------
+    default_spacing : float
+        Distance between objects' centers when distributed.
+    obj_idx : list
+        An indexed numpy list of all object locations.
+    """
+    oblist = bpy.context.selected_objects
+    if axis == 'x':
+        pos_list = [o.location.x for o in oblist]
+    elif axis == 'y':
+        pos_list = [o.location.y for o in oblist]
+    elif axis == 'z':
+        pos_list = [o.location.z for o in oblist]
+    obj_idx = np.argsort(pos_list)
+    distance = max(pos_list) - min(pos_list)
+    default_spacing = distance / (len(pos_list) - 1)
+    return default_spacing, obj_idx
+
+
+def find_d(obj_idx, direction):
+    """
+    Function that defines the distance between objects' edges.
+
+    Arguments
+    ---------
+    obj_idx : list
+        An indexed numpy list of all object locations.
+    direction : str
+        Either x y or z.
+
+    Returns
+    -------
+    d : float
+        distance between the edges of one object and the next.
+    """
+    drx_idx = {'x': 0, 'y': 1, 'z': 2}[direction]
+    oblist = bpy.context.selected_objects
+    obj_space = 0
+
+    for i, idx in enumerate(obj_idx):
+        vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
+        p1 = vertices[np.argsort(vertices[:, drx_idx])[0]]
+        p2 = vertices[np.argsort(vertices[:, drx_idx])[-1]]
+        if i == 0:
+            start = p1[drx_idx]
+        elif i == max(obj_idx):
+            end = p2[drx_idx]
+        obj_space += p2[drx_idx] - p1[drx_idx]
+    distance = end - start
+    empty_space = distance - obj_space
+    d = empty_space / (len(oblist) - 1)
+    return d
+
+
+def find_c_to_v(obj_idx, direction):
+    """
+    Function finds the default distance between that objects are being distributed from their centers.
+
+    Arguments
+    ---------
+    obj_idx : list
+        An indexed numpy list of all object locations.
+    direction : str
+        Either x y or z.
+
+    Returns
+    -------
+    c_to_v1 : list
+        A list of the distances from an object's most positive edge to its center.
+    c_to_v1 : list
+        A list of the distances from an object's most negative edge to its center.
+    """
+    drx_idx = {'x': 0, 'y': 1, 'z': 2}[direction]
+    oblist = bpy.context.selected_objects
+    c_to_v1 = []
+    c_to_v2 = []
+    for i, idx in enumerate(obj_idx):
+        vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
+        p1 = vertices[np.argsort(vertices[:, drx_idx])[-1]]
+        p2 = vertices[np.argsort(vertices[:, drx_idx])[0]]
+        if direction == 'x':
+            loc = oblist[idx].location.x
+        elif direction == 'y':
+            loc = oblist[idx].location.y
+        elif direction == 'z':
+            loc = oblist[idx].location.z
+        dist1 = p1[drx_idx] - loc
+        dist2 = loc - p2[drx_idx]
+        c_to_v1.append(dist1)
+        c_to_v2.append(dist2)
+    return c_to_v1, c_to_v2
 
 
 def align_axis_0():
@@ -129,7 +225,7 @@ def align_axis_0():
     directiony = bpy.context.scene.object_settings.y_selected0
     directionz = bpy.context.scene.object_settings.z_selected0
 
-    if axis == 'x-axis':
+    if axis == 'x':
         if directionx == 'center':
             for obj in oblist:
                 obj.location.y = 0
@@ -138,7 +234,7 @@ def align_axis_0():
             for obj in oblist:
                 v = find_vertex(obj, directionx[1], directionx[0])
                 obj = transform_object(obj, [0, -v[1], -v[2]])
-    elif axis == 'y-axis':
+    elif axis == 'y':
         if directiony == 'center':
             for obj in oblist:
                 obj.location.x = 0
@@ -147,7 +243,7 @@ def align_axis_0():
             for obj in oblist:
                 v = find_vertex(obj, directiony[1], directiony[0])
                 obj = transform_object(obj, [-v[0], 0, -v[2]])
-    elif axis == 'z-axis':
+    elif axis == 'z':
         if directionz == 'center':
             for obj in oblist:
                 obj.location.x = 0
@@ -216,7 +312,7 @@ def align_axis_1():
     directiony = bpy.context.scene.object_settings.y_selected1
     directionz = bpy.context.scene.object_settings.z_selected1
 
-    if axis == 'x-axis':
+    if axis == 'x':
         if directionx == 'center':
             for obj in list(bpy.data.objects):
                 if obj.blign == True:
@@ -233,7 +329,7 @@ def align_axis_1():
                 v = find_vertex(obj, directionx[1], directionx[0])
                 delta = blign_vertex - v
                 obj = transform_object(obj, [0, delta[1], delta[2]])
-    elif axis == 'y-axis':
+    elif axis == 'y':
         if directiony == 'center':
             for obj in list(bpy.data.objects):
                 if obj.blign == True:
@@ -250,7 +346,7 @@ def align_axis_1():
                 v = find_vertex(obj, directiony[1], directiony[0])
                 delta = blign_vertex - v
                 obj = transform_object(obj, [delta[0], 0, delta[2]])
-    elif axis == 'z-axis':
+    elif axis == 'z':
         if directionz == 'center':
             for obj in list(bpy.data.objects):
                 if obj.blign == True:
@@ -366,6 +462,85 @@ def align_2():
             obj = transform_object(obj, v)
 
 
+def distribute_0_or_1(indicate, axis, dist_type, spacing):
+    """
+    Distributes objects from their centers or edges when 0 or 1 blign objects are added.
+
+    Arguments
+    ---------
+    indicate : boolean
+        If True, user can set spacing. If False, Blign finds default spacing.
+    axis: str
+        Either x y or z.
+    dist_type : str
+        The user's choice to distribute from either center or edge. 
+    spacing : int
+        number of units between objects (specified by user).
+
+    Returns
+    -------
+    """
+    oblist = bpy.context.selected_objects
+
+    if dist_type == 'center':
+        if len(oblist) > 1:
+            if not indicate:
+                default_spacing, obj_idx = find_default_spacing(axis)
+                if axis == 'x':
+                    for i, idx in enumerate(obj_idx):
+                        oblist[idx].location.x = oblist[obj_idx[0]].location.x + default_spacing * i
+                elif axis == 'y':
+                    for i, idx in enumerate(obj_idx):
+                        oblist[idx].location.y = oblist[obj_idx[0]].location.y + default_spacing * i
+                elif axis == 'z':
+                    for i, idx in enumerate(obj_idx):
+                        oblist[idx].location.z = oblist[obj_idx[0]].location.z + default_spacing * i
+            else:
+                spacing = bpy.context.scene.object_settings.Spacing0
+                obj_idx = find_default_spacing(axis)[1]
+                if axis == 'x':
+                    for i, idx in enumerate(obj_idx):
+                        oblist[idx].location.x = oblist[obj_idx[0]].location.x + spacing * i
+                elif axis == 'y':
+                    for i, idx in enumerate(obj_idx):
+                        oblist[idx].location.y = oblist[obj_idx[0]].location.y + spacing * i
+                elif axis == 'z':
+                    for i, idx in enumerate(obj_idx):
+                        oblist[idx].location.z = oblist[obj_idx[0]].location.z + spacing * i
+    elif dist_type == 'edge':
+        if len(oblist) > 1:
+            obj_idx = find_default_spacing(axis)[1]
+            if not indicate:
+                d = find_d(obj_idx, axis)
+                c_to_v1, c_to_v2 = find_c_to_v(obj_idx, axis)
+                if axis == 'x':
+                    for i, idx in enumerate(obj_idx):
+                        if i < max(obj_idx):
+                            oblist[obj_idx[i + 1]].location.x = oblist[idx].location.x + c_to_v1[i] + d + c_to_v2[i + 1]
+                elif axis == 'y':
+                    for i, idx in enumerate(obj_idx):
+                        if i < max(obj_idx):
+                            oblist[obj_idx[i + 1]].location.y = oblist[idx].location.y + c_to_v1[i] + d + c_to_v2[i + 1]
+                elif axis == 'z':
+                    for i, idx in enumerate(obj_idx):
+                        if i < max(obj_idx):
+                            oblist[obj_idx[i + 1]].location.z = oblist[idx].location.z + c_to_v1[i] + d + c_to_v2[i + 1]
+            else:
+                c_to_v1, c_to_v2 = find_c_to_v(obj_idx, axis)
+                if axis == 'x':
+                    for i, idx in enumerate(obj_idx):
+                        if i < max(obj_idx):
+                            oblist[obj_idx[i + 1]].location.x = oblist[idx].location.x + c_to_v1[i] + spacing + c_to_v2[i + 1]
+                elif axis == 'y':
+                    for i, idx in enumerate(obj_idx):
+                        if i < max(obj_idx):
+                            oblist[obj_idx[i + 1]].location.y = oblist[idx].location.y + c_to_v1[i] + spacing + c_to_v2[i + 1]
+                elif axis == 'z':
+                    for i, idx in enumerate(obj_idx):
+                        if i < max(obj_idx):
+                            oblist[obj_idx[i + 1]].location.z = oblist[idx].location.z + c_to_v1[i] + spacing + c_to_v2[i + 1]
+
+
 class Add_Object(bpy.types.Operator):
     """Class that defines the Add Object button."""
     bl_idname = "rigidbody.blign_add_object"
@@ -468,23 +643,13 @@ class Blign_Align_Button2(bpy.types.Operator):
 
         If number of blign objects = 2, aligns selected objects along the line between the 2 blign objects.
         """
-        # align = bpy.context.scene.object_settings.align_to_2_ops
-        # oblist = bpy.context.selected_objects
-
-        i = count_blign_objects()
-
-        if i == 2:
+        if count_blign_objects() == 2:
             align_2()
         else:
             pass
 
         return {'FINISHED'}
 
-
-# def distribute_0(obj_idx, x, default_spacing):
-#     oblist = bpy.context.selected_objects
-#     for i, idx in enumerate(obj_idx):
-#         oblist[idx].location.x = oblist[obj_idx[0]].location.x + default_spacing * i
 
 class Blign_Distribute_Button0(bpy.types.Operator):
     """Defines the Distribute button."""
@@ -493,222 +658,15 @@ class Blign_Distribute_Button0(bpy.types.Operator):
     bl_description = "Distribute objects"
 
     def execute(self, context):
-        """Distributes objects between first and last object.
-
-        Indicate = the indicate spacing button. If unchecked, evenly distributes shapes. 
-        If checked, distributes objects 'spacing' units apart.
-        """
         indicate = bpy.context.scene.object_settings.indicate_spacing0
         axis = bpy.context.scene.object_settings.Axis0
-        oblist = bpy.context.selected_objects
         dist_type = bpy.context.scene.object_settings.distribute_ops0
+        spacing = bpy.context.scene.object_settings.Spacing0
 
-        i = count_blign_objects()
-
-        if dist_type == 'center':
-            if i == 0:
-                if len(oblist) > 1:
-                    if not indicate:
-                        pos_list = []
-                        if axis == 'x-axis':
-                            pos_list = [o.location.x for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            default_spacing = distance / (len(pos_list) - 1)
-                            # distribute_0(obj_idx, x, default_spacing)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.x = oblist[obj_idx[0]].location.x + default_spacing * i
-                        elif axis == 'y-axis':
-                            pos_list = [o.location.y for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            default_spacing = distance / (len(pos_list) - 1)
-                            # distribute_0(obj_idx, y, default_spacing)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.y = oblist[obj_idx[0]].location.y + default_spacing * i
-                        elif axis == 'z-axis':
-                            pos_list = [o.location.z for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            default_spacing = distance / (len(pos_list) - 1)
-                            # distribute_0(obj_idx, z, default_spacing)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.z = oblist[obj_idx[0]].location.z + default_spacing * i
-                    else:
-                        spacing = bpy.context.scene.object_settings.Spacing0
-                        if axis == 'x-axis':
-                            pos_list = [o.location.x for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            # distribute_0(obj_idx, x, spacing)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.x = oblist[obj_idx[0]].location.x + spacing * i
-                        elif axis == 'y-axis':
-                            pos_list = [o.location.y for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            # distribute_0(obj_idx, y, spacing)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.y = oblist[obj_idx[0]].location.y + spacing * i
-                        elif axis == 'z-axis':
-                            pos_list = [o.location.z for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            # distribute_0(obj_idx, z, spacing)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.z = oblist[obj_idx[0]].location.z + spacing * i
-            else:
-                pass
-        elif dist_type == 'edge':
-            if i == 0:
-                if len(oblist) > 1:
-                    if not indicate:
-                        pos_list = []
-                        if axis == 'x-axis':
-                            pos_list = [o.location.x for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            obj_space = 0
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 0])[0]]
-                                p2 = vertices[np.argsort(vertices[:, 0])[-1]]
-                                if i == 0:
-                                    start = p1[0]
-                                elif i == max(obj_idx):
-                                    end = p2[0]
-                                obj_space += (p2[0] - p1[0])
-                            distance = end - start
-                            empty_space = distance - obj_space
-                            d = empty_space / (len(oblist) - 1)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 0])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 0])[0]]
-                                dist1 = p1[0] - oblist[idx].location.x
-                                dist2 = oblist[idx].location.x - p2[0]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.x = oblist[idx].location.x + c_to_v1[i] + d + c_to_v2[i + 1]
-                        elif axis == 'y-axis':
-                            pos_list = [o.location.y for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            obj_space = 0
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 1])[0]]
-                                p2 = vertices[np.argsort(vertices[:, 1])[-1]]
-                                if i == 0:
-                                    start = p1[1]
-                                elif i == max(obj_idx):
-                                    end = p2[1]
-                                obj_space += (p2[1] - p1[1])
-                            distance = end - start
-                            empty_space = distance - obj_space
-                            d = empty_space / (len(oblist) - 1)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 1])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 1])[0]]
-                                dist1 = p1[1] - oblist[idx].location.y
-                                dist2 = oblist[idx].location.y - p2[1]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.y = oblist[idx].location.y + c_to_v1[i] + d + c_to_v2[i + 1]
-                        elif axis == 'z-axis':
-                            pos_list = [o.location.z for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            obj_space = 0
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 2])[0]]
-                                p2 = vertices[np.argsort(vertices[:, 2])[-1]]
-                                if i == 0:
-                                    start = p1[2]
-                                elif i == max(obj_idx):
-                                    end = p2[2]
-                                obj_space += (p2[2] - p1[2])
-                            distance = end - start
-                            empty_space = distance - obj_space
-                            d = empty_space / (len(oblist) - 1)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 2])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 2])[0]]
-                                dist1 = p1[2] - oblist[idx].location.z
-                                dist2 = oblist[idx].location.z - p2[2]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.z = oblist[idx].location.z + c_to_v1[i] + d + c_to_v2[i + 1]
-                    else:
-                        spacing = bpy.context.scene.object_settings.Spacing0
-                        if axis == 'x-axis':
-                            pos_list = [o.location.x for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 0])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 0])[0]]
-                                dist1 = p1[0] - oblist[idx].location.x
-                                dist2 = oblist[idx].location.x - p2[0]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.x = oblist[idx].location.x + c_to_v1[i] + spacing + c_to_v2[i + 1]
-                        elif axis == 'y-axis':
-                            pos_list = [o.location.y for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 1])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 1])[0]]
-                                dist1 = p1[1] - oblist[idx].location.y
-                                dist2 = oblist[idx].location.y - p2[1]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.y = oblist[idx].location.y + c_to_v1[i] + spacing + c_to_v2[i + 1]
-                        elif axis == 'z-axis':
-                            pos_list = [o.location.z for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 2])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 2])[0]]
-                                dist1 = p1[2] - oblist[idx].location.z
-                                dist2 = oblist[idx].location.z - p2[2]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.z = oblist[idx].location.z + c_to_v1[i] + spacing + c_to_v2[i + 1]
-            else:
-                pass
+        if count_blign_objects() != 2:
+            distribute_0_or_1(indicate, axis, dist_type, spacing)
+        else:
+            pass
 
         return {'FINISHED'}
 
@@ -727,208 +685,13 @@ class Blign_Distribute_Button1(bpy.types.Operator):
         """
         indicate = bpy.context.scene.object_settings.indicate_spacing1
         axis = bpy.context.scene.object_settings.Axis1
-        oblist = bpy.context.selected_objects
         dist_type = bpy.context.scene.object_settings.distribute_ops1
+        spacing = bpy.context.scene.object_settings.Spacing1
 
-        i = count_blign_objects()
-
-        if dist_type == 'center':
-            if i == 1:
-                if len(oblist) > 1:
-                    if not indicate:
-                        if axis == 'x-axis':
-                            pos_list = [o.location.x for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            default_spacing = distance / (len(pos_list) - 1)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.x = oblist[obj_idx[0]].location.x + default_spacing * i
-                        elif axis == 'y-axis':
-                            pos_list = [o.location.y for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            default_spacing = distance / (len(pos_list) - 1)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.y = oblist[obj_idx[0]].location.y + default_spacing * i
-                        elif axis == 'z-axis':
-                            pos_list = [o.location.z for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            default_spacing = distance / (len(pos_list) - 1)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.z = oblist[obj_idx[0]].location.z + default_spacing * i
-                    else:
-                        spacing = bpy.context.scene.object_settings.Spacing1
-                        if axis == 'x-axis':
-                            pos_list = [o.location.x for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.x = oblist[obj_idx[0]].location.x + spacing * i
-                        elif axis == 'y-axis':
-                            pos_list = [o.location.y for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.y = oblist[obj_idx[0]].location.y + spacing * i
-                        elif axis == 'z-axis':
-                            pos_list = [o.location.z for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            distance = max(pos_list) - min(pos_list)
-                            for i, idx in enumerate(obj_idx):
-                                oblist[idx].location.z = oblist[obj_idx[0]].location.z + spacing * i
-            else:
-                pass
-        elif dist_type == 'edge':
-            if i == 1:
-                if len(oblist) > 1:
-                    if not indicate:
-                        pos_list = []
-                        if axis == 'x-axis':
-                            pos_list = [o.location.x for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            obj_space = 0
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 0])[0]]
-                                p2 = vertices[np.argsort(vertices[:, 0])[-1]]
-                                if i == 0:
-                                    start = p1[0]
-                                elif i == max(obj_idx):
-                                    end = p2[0]
-                                obj_space += (p2[0] - p1[0])
-                            distance = end - start
-                            empty_space = distance - obj_space
-                            d = empty_space / (len(oblist) - 1)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 0])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 0])[0]]
-                                dist1 = p1[0] - oblist[idx].location.x
-                                dist2 = oblist[idx].location.x - p2[0]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.x = oblist[idx].location.x + c_to_v1[i] + d + c_to_v2[i + 1]
-                        elif axis == 'y-axis':
-                            pos_list = [o.location.y for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            obj_space = 0
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 1])[0]]
-                                p2 = vertices[np.argsort(vertices[:, 1])[-1]]
-                                if i == 0:
-                                    start = p1[1]
-                                elif i == max(obj_idx):
-                                    end = p2[1]
-                                obj_space += (p2[1] - p1[1])
-                            distance = end - start
-                            empty_space = distance - obj_space
-                            d = empty_space / (len(oblist) - 1)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 1])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 1])[0]]
-                                dist1 = p1[1] - oblist[idx].location.y
-                                dist2 = oblist[idx].location.y - p2[1]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.y = oblist[idx].location.y + c_to_v1[i] + d + c_to_v2[i + 1]
-                        elif axis == 'z-axis':
-                            pos_list = [o.location.z for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            obj_space = 0
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 2])[0]]
-                                p2 = vertices[np.argsort(vertices[:, 2])[-1]]
-                                if i == 0:
-                                    start = p1[2]
-                                elif i == max(obj_idx):
-                                    end = p2[2]
-                                obj_space += (p2[2] - p1[2])
-                            distance = end - start
-                            empty_space = distance - obj_space
-                            d = empty_space / (len(oblist) - 1)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 2])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 2])[0]]
-                                dist1 = p1[2] - oblist[idx].location.z
-                                dist2 = oblist[idx].location.z - p2[2]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.z = oblist[idx].location.z + c_to_v1[i] + d + c_to_v2[i + 1]
-                    else:
-                        spacing = bpy.context.scene.object_settings.Spacing1
-                        if axis == 'x-axis':
-                            pos_list = [o.location.x for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 0])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 0])[0]]
-                                dist1 = p1[0] - oblist[idx].location.x
-                                dist2 = oblist[idx].location.x - p2[0]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.x = oblist[idx].location.x + c_to_v1[i] + spacing + c_to_v2[i + 1]
-                        elif axis == 'y-axis':
-                            pos_list = [o.location.y for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 1])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 1])[0]]
-                                dist1 = p1[1] - oblist[idx].location.y
-                                dist2 = oblist[idx].location.y - p2[1]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.y = oblist[idx].location.y + c_to_v1[i] + spacing + c_to_v2[i + 1]
-                        elif axis == 'z-axis':
-                            pos_list = [o.location.z for o in oblist]
-                            obj_idx = np.argsort(pos_list)
-                            c_to_v1 = []
-                            c_to_v2 = []
-                            for i, idx in enumerate(obj_idx):
-                                vertices = np.array([oblist[obj_idx[i]].matrix_world @ Vector(c) for c in oblist[obj_idx[i]].bound_box])
-                                p1 = vertices[np.argsort(vertices[:, 2])[-1]]
-                                p2 = vertices[np.argsort(vertices[:, 2])[0]]
-                                dist1 = p1[2] - oblist[idx].location.z
-                                dist2 = oblist[idx].location.z - p2[2]
-                                c_to_v1.append(dist1)
-                                c_to_v2.append(dist2)
-
-                            for i, idx in enumerate(obj_idx):
-                                if i < max(obj_idx):
-                                    oblist[obj_idx[i + 1]].location.z = oblist[idx].location.z + c_to_v1[i] + spacing + c_to_v2[i + 1]
-            else:
-                pass
+        if count_blign_objects() != 2:
+            distribute_0_or_1(indicate, axis, dist_type, spacing)
+        else:
+            pass
 
         return {'FINISHED'}
 
@@ -1140,10 +903,10 @@ class BlignSettings(bpy.types.PropertyGroup):
 
     Axis0: bpy.props.EnumProperty(
         name="Axis",
-        items=[("x-axis", "x", "Align objects in the x direction"),
-               ("y-axis", "y", "Align objects in the y direction"),
-               ("z-axis", "z", "Align objects in the z direction")],
-        default='x-axis',
+        items=[("x", "x", "Align objects in the x direction"),
+               ("y", "y", "Align objects in the y direction"),
+               ("z", "z", "Align objects in the z direction")],
+        default='x',
         options={'HIDDEN'},
     )
 
@@ -1165,10 +928,10 @@ class BlignSettings(bpy.types.PropertyGroup):
 
     Axis1: bpy.props.EnumProperty(
         name="Axis",
-        items=[("x-axis", "x", "Align objects in the x direction"),
-               ("y-axis", "y", "Align objects in the y direction"),
-               ("z-axis", "z", "Align objects in the z direction")],
-        default='x-axis',
+        items=[("x", "x", "Align objects in the x direction"),
+               ("y", "y", "Align objects in the y direction"),
+               ("z", "z", "Align objects in the z direction")],
+        default='x',
         options={'HIDDEN'},
     )
 
@@ -1424,23 +1187,19 @@ class Blign_Principal_Axes(bpy.types.Panel):
         plane = bpy.context.scene.object_settings.Plane0
 
         row = layout.row()
-        row.alignment = 'RIGHT'
-        row.prop(settings, "check_plane0")
-
-        row = layout.row()
         if check_plane == False:
             row.prop(settings, "Axis0", expand=True)
         elif check_plane == True:
             row.prop(settings, "Plane0", expand=True)
 
         if check_plane == False:
-            if axis == 'x-axis':
+            if axis == 'x':
                 row = layout.row()
                 row.prop(settings, "x_selected0")
-            elif axis == 'y-axis':
+            elif axis == 'y':
                 row = layout.row()
                 row.prop(settings, "y_selected0")
-            elif axis == 'z-axis':
+            elif axis == 'z':
                 row = layout.row()
                 row.prop(settings, "z_selected0")
         elif check_plane == True:
@@ -1453,6 +1212,10 @@ class Blign_Principal_Axes(bpy.types.Panel):
             elif plane == 'x-y':
                 row = layout.row()
                 row.prop(settings, "xy_selected0")
+
+        row = layout.row()
+        row.alignment = 'RIGHT'
+        row.prop(settings, "check_plane0")
 
         row = layout.row()
         row.operator('rigidbody.blign_align_button0')
@@ -1485,11 +1248,7 @@ class Blign_One_Object(bpy.types.Panel):
         axis = bpy.context.scene.object_settings.Axis1
         check_plane = bpy.context.scene.object_settings.check_plane1
         plane = bpy.context.scene.object_settings.Plane1
-
-        row = layout.row()
-        row.alignment = 'RIGHT'
-        row.prop(settings, "check_plane1")
-
+        
         row = layout.row()
         if check_plane == False:
             row.prop(settings, "Axis1", expand=True)
@@ -1497,13 +1256,13 @@ class Blign_One_Object(bpy.types.Panel):
             row.prop(settings, "Plane1", expand=True)
 
         if check_plane == False:
-            if axis == 'x-axis':
+            if axis == 'x':
                 row = layout.row()
                 row.prop(settings, "x_selected1")
-            elif axis == 'y-axis':
+            elif axis == 'y':
                 row = layout.row()
                 row.prop(settings, "y_selected1")
-            elif axis == 'z-axis':
+            elif axis == 'z':
                 row = layout.row()
                 row.prop(settings, "z_selected1")
         elif check_plane == True:
@@ -1516,6 +1275,10 @@ class Blign_One_Object(bpy.types.Panel):
             elif plane == 'x-y':
                 row = layout.row()
                 row.prop(settings, "xy_selected1")
+
+        row = layout.row()
+        row.alignment = 'RIGHT'
+        row.prop(settings, "check_plane1")
 
         row = layout.row()
         row.operator('rigidbody.blign_align_button1')
