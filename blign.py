@@ -452,12 +452,12 @@ def distribute_0_or_1(indicate, axis, dist_type, spacing):
     Distributes objects from their centers or edges when 0 or 1 blign objects are added.
     Arguments
     ---------
-    indicate : boolean
+    indicate : bool
         If True, user can set spacing. If False, Blign finds default spacing.
     axis: str
         Either x y or z.
     dist_type : str
-        The user's choice to distribute from either center or edge. 
+        The user's choice to distribute from either center or edge.
     spacing : int
         number of units between objects (specified by user).
     Returns
@@ -571,7 +571,7 @@ def distribute_2():
                 v = p2 - p1
                 u = v / np.linalg.norm(v)  # magnitude of vector v
                 i = 0
-                for obj in oblist:
+                for obj in bpy.context.selected_objects:
                     obj.location.x = p1[0] + u[0] * spacing * i
                     obj.location.y = p1[1] + u[1] * spacing * i
                     obj.location.z = p1[2] + u[2] * spacing * i
@@ -809,7 +809,7 @@ class BlignSettings(bpy.types.PropertyGroup):
     )
 
     check_plane0: bpy.props.BoolProperty(
-        name="Select Plane",
+        name="Align to Plane",
         description="Choose whether or not to align objects to a plane",
         options={'HIDDEN'},
         default=False
@@ -834,7 +834,7 @@ class BlignSettings(bpy.types.PropertyGroup):
     )
 
     check_plane1: bpy.props.BoolProperty(
-        name="Select Plane",
+        name="Align to Plane",
         description="Choose whether or not to align objects to a plane",
         options={'HIDDEN'},
         default=False
