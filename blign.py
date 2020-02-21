@@ -564,12 +564,12 @@ def distribute_2():
                 for i, idx in enumerate(obj_idx_z):
                     oblist[idx].location.z = oblist[obj_idx_z[0]].location.z + \
                         default_spacing_z * i
-            else:  # whenever spacing is checked and distribute is clicked multiple times it keeps moving all objects
+            else:
                 spacing = bpy.context.scene.object_settings.Spacing2
                 p1, p2 = [np.array(o.location)
                           for o in bpy.data.objects if o.blign]
                 v = p2 - p1
-                u = v / np.linalg.norm(v)  # magnitude of vector v
+                u = v / np.linalg.norm(v)
                 i = 0
                 for obj in bpy.context.selected_objects:
                     obj.location.x = p1[0] + u[0] * spacing * i
@@ -772,7 +772,6 @@ class Blign(bpy.types.Panel):
                 blobs.append(object.name)
                 i += 1
 
-        # this is here to fix the delete error, improve code at some point in future to fix
         try:
             if (bpy.context.object.blign == True):
                 row = layout.row()
@@ -784,7 +783,6 @@ class Blign(bpy.types.Panel):
         except AttributeError:
             pass
 
-        # Objects are always sorted alphabetically, figure out how to change
         if i == 1:
             row = layout.row()
             row.label(text="Object 1: {}".format(str(blobs[0])))
