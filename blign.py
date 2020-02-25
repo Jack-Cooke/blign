@@ -578,7 +578,7 @@ def distribute_2():
                     i += 1
 
 
-class Add_Object(bpy.types.Operator):
+class BLIGN_OT_Add_Object(bpy.types.Operator):
     """Class that defines the Add Object button."""
     bl_idname = "rigidbody.blign_add_object"
     bl_label = "Add Object"
@@ -598,7 +598,7 @@ class Add_Object(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Remove_Object(bpy.types.Operator):
+class BLIGN_OT_Remove_Object(bpy.types.Operator):
     """Class that defines the Remove Object button."""
     bl_idname = "rigidbody.blign_remove_object"
     bl_label = "Remove Object"
@@ -619,7 +619,7 @@ class Remove_Object(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Align_Button0(bpy.types.Operator):
+class BLIGN_OT_Align_Button0(bpy.types.Operator):
     """Defines the Align button."""
     bl_idname = "rigidbody.blign_align_button0"
     bl_label = "Align"
@@ -643,7 +643,7 @@ class Blign_Align_Button0(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Align_Button1(bpy.types.Operator):
+class BLIGN_OT_Align_Button1(bpy.types.Operator):
     """Defines the Align button."""
     bl_idname = "rigidbody.blign_align_button1"
     bl_label = "Align"
@@ -667,7 +667,7 @@ class Blign_Align_Button1(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Align_Button2(bpy.types.Operator):
+class BLIGN_OT_Align_Button2(bpy.types.Operator):
     """Defines the Align button."""
     bl_idname = "rigidbody.blign_align_button2"
     bl_label = "Align"
@@ -685,7 +685,7 @@ class Blign_Align_Button2(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Distribute_Button0(bpy.types.Operator):
+class BLIGN_OT_Distribute_Button0(bpy.types.Operator):
     """Defines the Distribute button."""
     bl_idname = "rigidbody.blign_distribute_button0"
     bl_label = "Distribute"
@@ -705,7 +705,7 @@ class Blign_Distribute_Button0(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Distribute_Button1(bpy.types.Operator):
+class BLIGN_OT_Distribute_Button1(bpy.types.Operator):
     """Defines the Distribute button."""
     bl_idname = "rigidbody.blign_distribute_button1"
     bl_label = "Distribute"
@@ -729,7 +729,7 @@ class Blign_Distribute_Button1(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Distribute_Button2(bpy.types.Operator):
+class BLIGN_OT_Distribute_Button2(bpy.types.Operator):
     """Defines the Distribute button."""
     bl_idname = "rigidbody.blign_distribute_button2"
     bl_label = "Distribute"
@@ -748,7 +748,7 @@ class Blign_Distribute_Button2(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign(bpy.types.Panel):
+class BLIGN_PT_Blign(bpy.types.Panel):
     """Parent tab, all other tabs are within this one."""
     bl_label = "Blign"
     bl_category = "Geometry"
@@ -1061,10 +1061,10 @@ class BlignSettings(bpy.types.PropertyGroup):
     )
 
 
-class Blign_Principal_Axes(bpy.types.Panel):
+class BLIGN_PT_Blign_Principal_Axes(bpy.types.Panel):
     """Class that outlines the Align tab."""
     bl_label = "Principal Axes/Planes"
-    bl_parent_id = "Blign"
+    bl_parent_id = "BLIGN_PT_Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -1126,10 +1126,10 @@ class Blign_Principal_Axes(bpy.types.Panel):
         row.operator('rigidbody.blign_distribute_button0')
 
 
-class Blign_One_Object(bpy.types.Panel):
+class BLIGN_PT_Blign_One_Object(bpy.types.Panel):
     """Class that outlines the Align to One Object tab."""
     bl_label = "Align to One Object"
-    bl_parent_id = "Blign"
+    bl_parent_id = "BLIGN_PT_Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -1189,10 +1189,10 @@ class Blign_One_Object(bpy.types.Panel):
         row.operator('rigidbody.blign_distribute_button1')
 
 
-class Blign_Two_Objects(bpy.types.Panel):
+class BLIGN_PT_Blign_Two_Objects(bpy.types.Panel):
     """Class that outlines the Align to Two Objects tab."""
     bl_label = "Align to Two Objects"
-    bl_parent_id = "Blign"
+    bl_parent_id = "BLIGN_PT_Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -1222,19 +1222,19 @@ class Blign_Two_Objects(bpy.types.Panel):
 
 
 classes = (
-    Add_Object,
-    Remove_Object,
-    Blign_Align_Button0,
-    Blign_Align_Button1,
-    Blign_Align_Button2,
-    Blign_Distribute_Button0,
-    Blign_Distribute_Button1,
-    Blign_Distribute_Button2,
-    Blign,
+    BLIGN_OT_Add_Object,
+    BLIGN_OT_Remove_Object,
+    BLIGN_OT_Align_Button0,
+    BLIGN_OT_Align_Button1,
+    BLIGN_OT_Align_Button2,
+    BLIGN_OT_Distribute_Button0,
+    BLIGN_OT_Distribute_Button1,
+    BLIGN_OT_Distribute_Button2,
+    BLIGN_PT_Blign,
     BlignSettings,
-    Blign_Principal_Axes,
-    Blign_One_Object,
-    Blign_Two_Objects,
+    BLIGN_PT_Blign_Principal_Axes,
+    BLIGN_PT_Blign_One_Object,
+    BLIGN_PT_Blign_Two_Objects,
 )
 
 
@@ -1248,7 +1248,7 @@ def register():
 
     bpy.types.Scene.object_settings = bpy.props.PointerProperty(
         type=BlignSettings)
-    bpy.types.Object.blign = bpy.props.BoolProperty(name="Blign")
+    bpy.types.Object.blign = bpy.props.BoolProperty(name="BLIGN_PT_Blign")
 
 
 def unregister():
