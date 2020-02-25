@@ -1061,7 +1061,7 @@ class BlignSettings(bpy.types.PropertyGroup):
     )
 
 
-class Blign_Principal_Axes(bpy.types.Panel):
+class BLIGN_PT_Blign_Principal_Axes(bpy.types.Panel):
     """Class that outlines the Align tab."""
     bl_label = "Principal Axes/Planes"
     bl_parent_id = "Blign"
@@ -1126,7 +1126,7 @@ class Blign_Principal_Axes(bpy.types.Panel):
         row.operator('rigidbody.blign_distribute_button0')
 
 
-class Blign_One_Object(bpy.types.Panel):
+class BLIGN_PT_Blign_One_Object(bpy.types.Panel):
     """Class that outlines the Align to One Object tab."""
     bl_label = "Align to One Object"
     bl_parent_id = "Blign"
@@ -1189,7 +1189,7 @@ class Blign_One_Object(bpy.types.Panel):
         row.operator('rigidbody.blign_distribute_button1')
 
 
-class Blign_Two_Objects(bpy.types.Panel):
+class BLIGN_PT_Blign_Two_Objects(bpy.types.Panel):
     """Class that outlines the Align to Two Objects tab."""
     bl_label = "Align to Two Objects"
     bl_parent_id = "Blign"
@@ -1232,9 +1232,9 @@ classes = (
     Blign_Distribute_Button2,
     Blign,
     BlignSettings,
-    Blign_Principal_Axes,
-    Blign_One_Object,
-    Blign_Two_Objects,
+    BLIGN_PT_Blign_Principal_Axes,
+    BLIGN_PT_Blign_One_Object,
+    BLIGN_PT_Blign_Two_Objects,
 )
 
 
@@ -1248,7 +1248,7 @@ def register():
 
     bpy.types.Scene.object_settings = bpy.props.PointerProperty(
         type=BlignSettings)
-    bpy.types.Object.blign = bpy.props.BoolProperty(name="Blign")
+    bpy.types.Object.blign = bpy.props.BoolProperty(name="BLIGN_PT_Blign")
 
 
 def unregister():
