@@ -748,7 +748,7 @@ class Blign_Distribute_Button2(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign(bpy.types.Panel):
+class BLIGN_PT_Blign(bpy.types.Panel):
     """Parent tab, all other tabs are within this one."""
     bl_label = "Blign"
     bl_category = "Geometry"
@@ -1064,7 +1064,7 @@ class BlignSettings(bpy.types.PropertyGroup):
 class BLIGN_PT_Blign_Principal_Axes(bpy.types.Panel):
     """Class that outlines the Align tab."""
     bl_label = "Principal Axes/Planes"
-    bl_parent_id = "Blign"
+    bl_parent_id = "BLIGN_PT_Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -1129,7 +1129,7 @@ class BLIGN_PT_Blign_Principal_Axes(bpy.types.Panel):
 class BLIGN_PT_Blign_One_Object(bpy.types.Panel):
     """Class that outlines the Align to One Object tab."""
     bl_label = "Align to One Object"
-    bl_parent_id = "Blign"
+    bl_parent_id = "BLIGN_PT_Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -1192,7 +1192,7 @@ class BLIGN_PT_Blign_One_Object(bpy.types.Panel):
 class BLIGN_PT_Blign_Two_Objects(bpy.types.Panel):
     """Class that outlines the Align to Two Objects tab."""
     bl_label = "Align to Two Objects"
-    bl_parent_id = "Blign"
+    bl_parent_id = "BLIGN_PT_Blign"
     bl_category = "Geometry"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -1230,7 +1230,7 @@ classes = (
     Blign_Distribute_Button0,
     Blign_Distribute_Button1,
     Blign_Distribute_Button2,
-    Blign,
+    BLIGN_PT_Blign,
     BlignSettings,
     BLIGN_PT_Blign_Principal_Axes,
     BLIGN_PT_Blign_One_Object,
