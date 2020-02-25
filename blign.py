@@ -578,7 +578,7 @@ def distribute_2():
                     i += 1
 
 
-class Add_Object(bpy.types.Operator):
+class BLIGN_OT_Add_Object(bpy.types.Operator):
     """Class that defines the Add Object button."""
     bl_idname = "rigidbody.blign_add_object"
     bl_label = "Add Object"
@@ -598,7 +598,7 @@ class Add_Object(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Remove_Object(bpy.types.Operator):
+class BLIGN_OT_Remove_Object(bpy.types.Operator):
     """Class that defines the Remove Object button."""
     bl_idname = "rigidbody.blign_remove_object"
     bl_label = "Remove Object"
@@ -619,7 +619,7 @@ class Remove_Object(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Align_Button0(bpy.types.Operator):
+class BLIGN_OT_Align_Button0(bpy.types.Operator):
     """Defines the Align button."""
     bl_idname = "rigidbody.blign_align_button0"
     bl_label = "Align"
@@ -643,7 +643,7 @@ class Blign_Align_Button0(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Align_Button1(bpy.types.Operator):
+class BLIGN_OT_Align_Button1(bpy.types.Operator):
     """Defines the Align button."""
     bl_idname = "rigidbody.blign_align_button1"
     bl_label = "Align"
@@ -667,7 +667,7 @@ class Blign_Align_Button1(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Align_Button2(bpy.types.Operator):
+class BLIGN_OT_Align_Button2(bpy.types.Operator):
     """Defines the Align button."""
     bl_idname = "rigidbody.blign_align_button2"
     bl_label = "Align"
@@ -685,7 +685,7 @@ class Blign_Align_Button2(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Distribute_Button0(bpy.types.Operator):
+class BLIGN_OT_Distribute_Button0(bpy.types.Operator):
     """Defines the Distribute button."""
     bl_idname = "rigidbody.blign_distribute_button0"
     bl_label = "Distribute"
@@ -705,7 +705,7 @@ class Blign_Distribute_Button0(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Distribute_Button1(bpy.types.Operator):
+class BLIGN_OT_Distribute_Button1(bpy.types.Operator):
     """Defines the Distribute button."""
     bl_idname = "rigidbody.blign_distribute_button1"
     bl_label = "Distribute"
@@ -729,7 +729,7 @@ class Blign_Distribute_Button1(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class Blign_Distribute_Button2(bpy.types.Operator):
+class BLIGN_OT_Distribute_Button2(bpy.types.Operator):
     """Defines the Distribute button."""
     bl_idname = "rigidbody.blign_distribute_button2"
     bl_label = "Distribute"
@@ -1222,14 +1222,14 @@ class BLIGN_PT_Blign_Two_Objects(bpy.types.Panel):
 
 
 classes = (
-    Add_Object,
-    Remove_Object,
-    Blign_Align_Button0,
-    Blign_Align_Button1,
-    Blign_Align_Button2,
-    Blign_Distribute_Button0,
-    Blign_Distribute_Button1,
-    Blign_Distribute_Button2,
+    BLIGN_OT_Add_Object,
+    BLIGN_OT_Remove_Object,
+    BLIGN_OT_Align_Button0,
+    BLIGN_OT_Align_Button1,
+    BLIGN_OT_Align_Button2,
+    BLIGN_OT_Distribute_Button0,
+    BLIGN_OT_Distribute_Button1,
+    BLIGN_OT_Distribute_Button2,
     BLIGN_PT_Blign,
     BlignSettings,
     BLIGN_PT_Blign_Principal_Axes,
