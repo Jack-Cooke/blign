@@ -2,6 +2,7 @@ theme: jekyll-theme-minimal
 title: Blign
 description: Blender align and distribute plug-in
 show_downloads: True
+repository: Jack-Cooke/blign 
 navigation:
   - title: Home
     url: /
