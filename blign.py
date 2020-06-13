@@ -619,6 +619,20 @@ class BLIGN_OT_Remove_Object(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class Blign_OT_Clear_Objects(bpy.types.Operator):
+    """CLass that defines the Clear Objects button."""
+    bl_idname = "rigidbody.blign_clear_objects"
+    bl_label = "Clear Objects"
+    bl_description = "Removes all Blign Objects"
+
+    def execute(self, context):
+        for object in list(bpy.data.objects):
+            if object.blign:
+                context.view_layer.objects.active = object
+                context.object.blign = False
+
+        return {'FINISHED'}
+
 class BLIGN_OT_Align_Button0(bpy.types.Operator):
     """Defines the Align button."""
     bl_idname = "rigidbody.blign_align_button0"
@@ -782,6 +796,10 @@ class BLIGN_PT_Blign(bpy.types.Panel):
                     row.operator('rigidbody.blign_add_object')
         except AttributeError:
             pass
+
+        if i > 0:
+            row = layout.row()
+            row.operator('rigidbody.blign_clear_objects')
 
         if i == 1:
             row = layout.row()
@@ -1224,6 +1242,7 @@ class BLIGN_PT_Blign_Two_Objects(bpy.types.Panel):
 classes = (
     BLIGN_OT_Add_Object,
     BLIGN_OT_Remove_Object,
+    Blign_OT_Clear_Objects,
     BLIGN_OT_Align_Button0,
     BLIGN_OT_Align_Button1,
     BLIGN_OT_Align_Button2,
